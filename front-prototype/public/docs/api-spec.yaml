@@ -1,0 +1,1381 @@
+openapi: 3.0.3
+info:
+  title: 强盛科技进销存 API
+  description: |
+    强盛科技进销存系统的接口规范文档。核心业务场景围绕“计划 → 执行 → 结算”三阶段展开，遵循“订单 → 执行”两层单据设计。
+    
+    ### 核心设计原则
+    1. **两层单据设计**：
+       - **业务订单层**（如采购订单 PO）：记录意图和计划，不直接产生库存变动。审核前可自由编辑/删除，审核后锁定核心字段。
+       - **业务执行层**（如采购入库 PI、退货出库 PRO）：记录实际物理动作，直接增减库存。状态极简，无复杂审核流（仅有“草稿”与“已确认”及“已作废”状态）。执行层单据确认后自动生成对应的应收应付结算。
+    2. **动作按钮驱动**：
+       - 所有状态变更（如“审核”、“确认”、“作废”、“关闭”）必须通过动作按钮触发接口（如 `/api/.../{id}/approve`），禁止在表单编辑中直接修改状态。
+    3. **主数据通用规则**：
+       - 商品、供应商、仓库、客户等主数据记录不提供“删除”功能，统一采用“启用/停用”控制。
+    4. **数量口径公式**：
+       - **库存三口径**：`可用库存 = 现存 - 占用`。
+       - **采购三口径**：`入库数量 (PI) <= 实收数量 (PI) <= 未入库数量 (PO)`。
+       - **未入库数量 (PO)** = 采购数量 - 累计入库数量（计算只读）。
+  version: 1.0.0
+servers:
+  - url: /
+    description: 静态原型环境
+paths:
+  # ==========================================
+  # 采购订单 (PO)
+  # ==========================================
+  /api/purchase-orders:
+    get:
+      tags:
+        - 采购订单 PO
+      summary: 分页搜索采购订单
+      parameters:
+        - name: page
+          in: query
+          description: 页码（从 1 开始）
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          description: 每页条数
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: purchaseOrderNo
+          in: query
+          description: 采购订单号（PO前缀，模糊匹配）
+          required: false
+          schema:
+            type: string
+        - name: supplierId
+          in: query
+          description: 供应商ID
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 单据状态
+          required: false
+          schema:
+            type: string
+            enum: [draft, approved, partially_stocked_in, completed, cancelled, voided]
+      responses:
+        '200':
+          description: 成功获取订单列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: 总记录数
+                    example: 25
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          description: 请求参数错误
+
+    post:
+      tags:
+        - 采购订单 PO
+      summary: 新增采购订单
+      description: 新建采购订单，默认状态为草稿 (draft)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderCreateInput'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          description: 请求参数校验未通过
+
+  /api/purchase-orders/{id}:
+    put:
+      tags:
+        - 采购订单 PO
+      summary: 编辑采购订单
+      description: 仅在“草稿 (draft)”状态下允许编辑核心信息，其他状态下报错锁定。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 采购订单 ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderCreateInput'
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          description: 校验失败，或者单据不是草稿状态
+        '404':
+          description: 单据不存在
+
+    delete:
+      tags:
+        - 采购订单 PO
+      summary: 删除采购订单
+      description: 仅在“草稿 (draft)”状态下允许删除，已审核/已完成等不可删除。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 采购订单 ID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 删除成功（无内容返回）
+        '400':
+          description: 订单不是草稿状态，无法删除
+        '404':
+          description: 单据不存在
+
+  /api/purchase-orders/{id}/approve:
+    post:
+      tags:
+        - 采购订单 PO
+      summary: 审核采购订单
+      description: 动作按钮触发。状态由“草稿 (draft)”变更为“已审核 (approved)”，未入库数量初始化为采购数量。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 审核成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          description: 当前状态不可审核
+
+  /api/purchase-orders/{id}/void:
+    post:
+      tags:
+        - 采购订单 PO
+      summary: 作废采购订单
+      description: 动作按钮触发。仅在尚未发生任何采购入库执行时适用，状态更新为“已作废 (voided)”，释放被占用的意向额度，单号不回收。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 作废成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          description: 已发生入库，不可作废
+
+  /api/purchase-orders/{id}/close:
+    post:
+      tags:
+        - 采购订单 PO
+      summary: 手动关闭采购订单
+      description: 动作按钮触发。适用于已部分入库且后续不再发货的单据缺量完结。状态更新为“已完成 (completed)”，未入库数量强制清零。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 关闭成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          description: 当前状态无法手动关闭
+
+  # ==========================================
+  # 采购入库 PI
+  # ==========================================
+  /api/stock-in:
+    get:
+      tags:
+        - 采购入库 PI
+      summary: 分页搜索采购入库单
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: stockInNo
+          in: query
+          description: 采购入库单号（PI前缀）
+          schema:
+            type: string
+        - name: purchaseOrderNo
+          in: query
+          description: 关联采购订单号
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, confirmed, voided]
+      responses:
+        '200':
+          description: 成功获取入库单列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 18
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StockIn'
+
+    post:
+      tags:
+        - 采购入库 PI
+      summary: 新增采购入库单
+      description: 必须引用已审核的采购订单 PO 进行创建。创建时默认状态为“草稿 (draft)”。实收数量输入需要满足超收拦截条件。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockInCreateInput'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockIn'
+        '400':
+          description: 校验失败，例如实收数量超过采购订单的未入库数量（超收拦截）
+
+  /api/stock-in/{id}:
+    put:
+      tags:
+        - 采购入库 PI
+      summary: 编辑采购入库单
+      description: 仅在“草稿 (draft)”状态下允许修改明细，确认后不可编辑。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockInCreateInput'
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockIn'
+        '400':
+          description: 修改失败，例如单据已确认或超收校验失败
+        '404':
+          description: 单据不存在
+
+  /api/stock-in/{id}/confirm:
+    post:
+      tags:
+        - 采购入库 PI
+      summary: 确认入库
+      description: |
+        动作按钮触发。状态由“草稿 (draft)”变为“已确认 (confirmed)”。
+        
+        系统在此阶段进行如下逻辑操作：
+        1. 锁死入库数量 = 实收数量，更新对应仓库商品的**现存库存**和**可用库存**增加。
+        2. 自动回写采购订单 PO 的“累计入库数量”，并重新计算“未入库数量”及更新 PO 状态（已完成或部分入库）。
+        3. 自动生成财务应付记录。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 确认成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockIn'
+        '400':
+          description: 确认失败，如库存数据异常、超收拦截等
+
+  /api/stock-in/{id}/void:
+    post:
+      tags:
+        - 采购入库 PI
+      summary: 作废采购入库单
+      description: 动作按钮触发。适用于尚未产生退货等后续链路的入库单。状态更新为“已作废 (voided)”，扣减已入库库存，恢复 PO 的未入库数量。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 作废成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockIn'
+        '400':
+          description: 已有下游引用，不可作废
+
+  # ==========================================
+  # 采购退货 PR
+  # ==========================================
+  /api/purchase-returns:
+    get:
+      tags:
+        - 采购退货 PR
+      summary: 分页搜索采购退货单
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: purchaseReturnNo
+          in: query
+          description: 采购退货单号（PR前缀）
+          schema:
+            type: string
+        - name: stockInNo
+          in: query
+          description: 关联原采购入库单号
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, confirmed]
+      responses:
+        '200':
+          description: 成功获取退货单列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PurchaseReturn'
+
+    post:
+      tags:
+        - 采购退货 PR
+      summary: 新增采购退货单
+      description: 必须关联已确认的采购入库单 PI 创建，退货数量不能大于入库单的入库数量。默认状态为“草稿 (draft)”。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnCreateInput'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturn'
+        '400':
+          description: 校验失败，如退货数量超过原入库单数量
+
+  /api/purchase-returns/{id}:
+    put:
+      tags:
+        - 采购退货 PR
+      summary: 编辑采购退货单
+      description: 仅在“草稿 (draft)”状态下允许修改。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnCreateInput'
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturn'
+        '400':
+          description: 校验失败或当前非草稿状态
+
+  /api/purchase-returns/{id}/confirm:
+    post:
+      tags:
+        - 采购退货 PR
+      summary: 确认采购退货单
+      description: 动作按钮触发。状态由“草稿 (draft)”变更为“已确认 (confirmed)”，此时确认退货商品和数量，并可下推生成退货出库单。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 确认成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturn'
+        '400':
+          description: 确认失败
+
+  # ==========================================
+  # 退货出库 PRO
+  # ==========================================
+  /api/return-outbounds:
+    get:
+      tags:
+        - 退货出库 PRO
+      summary: 分页搜索退货出库单
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: returnOutboundNo
+          in: query
+          description: 退货出库单号（PRO前缀）
+          schema:
+            type: string
+        - name: purchaseReturnNo
+          in: query
+          description: 关联采购退货单号
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, confirmed]
+      responses:
+        '200':
+          description: 成功获取退货出库单列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 3
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReturnOutbound'
+
+    post:
+      tags:
+        - 退货出库 PRO
+      summary: 新增退货出库单
+      description: 必须引用已确认的采购退货单 PR 创建。默认状态为“草稿 (draft)”。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnOutboundCreateInput'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnOutbound'
+        '400':
+          description: 校验失败，如出库数量超过退货单申请数量
+
+  /api/return-outbounds/{id}:
+    put:
+      tags:
+        - 退货出库 PRO
+      summary: 编辑退货出库单
+      description: 仅在“草稿 (draft)”状态下允许修改。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnOutboundCreateInput'
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnOutbound'
+        '400':
+          description: 校验失败或当前非草稿状态
+
+  /api/return-outbounds/{id}/confirm:
+    post:
+      tags:
+        - 退货出库 PRO
+      summary: 确认退货出库
+      description: |
+        动作按钮触发。状态由“草稿 (draft)”变更为“已确认 (confirmed)”。
+        
+        系统在此阶段进行如下逻辑操作：
+        1. 扣减对应仓库商品的**现存库存**和**可用库存**。
+        2. 自动扣减对应供应商的应付账款。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 确认成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnOutbound'
+        '400':
+          description: 扣减库存或结算扣减失败
+
+  # ==========================================
+  # 库存流水 FL
+  # ==========================================
+  /api/inventory-flows:
+    get:
+      tags:
+        - 库存流水 FL
+      summary: 查询库存变动流水
+      description: |
+        该接口为纯只读接口（无状态机，无新增/编辑/详情）。由系统在采购入库、退货出库、销售出库、零售结账等确认时自动记录变动。
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: goodsId
+          in: query
+          description: 商品ID过滤
+          schema:
+            type: string
+        - name: warehouseId
+          in: query
+          description: 仓库ID过滤
+          schema:
+            type: string
+        - name: sourceNo
+          in: query
+          description: 来源单号（如PI..., PRO...）
+          schema:
+            type: string
+        - name: flowType
+          in: query
+          description: 业务流水类型
+          schema:
+            type: string
+            enum: [purchase_in, sale_out, retail_sale, transfer, inventory_check, loss]
+      responses:
+        '200':
+          description: 成功获取流水记录列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 120
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventoryFlow'
+
+  # ==========================================
+  # 即时库存
+  # ==========================================
+  /api/instant-stocks:
+    get:
+      tags:
+        - 即时库存
+      summary: 查询商品即时库存
+      description: |
+        展示各个仓库中所有商品的“现存”、“占用”、“可用”库存情况。属于只读查询接口（无状态机，无编辑）。
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: warehouseId
+          in: query
+          description: 按仓库过滤
+          schema:
+            type: string
+        - name: goodsCodeOrName
+          in: query
+          description: 商品名称或编码联想词搜索
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功获取即时库存列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 45
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InstantStock'
+
+components:
+  schemas:
+    # 采购订单 (PO)
+    PurchaseOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "po_12345678"
+        purchaseOrderNo:
+          type: string
+          description: 单据编号，格式为 PO{YYYYMMDD}-{4位序号}
+          example: "PO20260706-0001"
+        supplierId:
+          type: string
+          example: "sup_huaqiang"
+        supplierName:
+          type: string
+          example: "华强北电子供应链"
+        purchaser:
+          type: string
+          description: 采购员姓名
+          example: "张伟"
+        orderDate:
+          type: string
+          format: date
+          example: "2026-07-06"
+        status:
+          type: string
+          description: |
+            单据状态：
+            - `draft`: 草稿
+            - `approved`: 已审核 (等待入库)
+            - `partially_stocked_in`: 部分入库
+            - `completed`: 已完成 (入库数>=采购数，或手动关闭)
+            - `cancelled`: 已取消 (仅限草稿取消)
+            - `voided`: 已作废 (仅在未发生任何下游入库时可作废)
+          enum: [draft, approved, partially_stocked_in, completed, cancelled, voided]
+          example: "approved"
+        totalAmount:
+          type: number
+          description: 订单总金额 (含税)
+          example: 85000.00
+        remark:
+          type: string
+          example: "华强北急单采购一批元器件"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderItem'
+
+    PurchaseOrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "po_item_1"
+        goodsId:
+          type: string
+          example: "sku_iphone17_pro"
+        goodsCode:
+          type: string
+          example: "IPHONE-17-PRO"
+        goodsName:
+          type: string
+          example: "iPhone 17 Pro Max 256G"
+        specification:
+          type: string
+          example: "钛金属原色/256G"
+        unit:
+          type: string
+          example: "台"
+        purchaseQuantity:
+          type: number
+          description: 计划采购数量 (订单上填写)
+          example: 10
+        purchaseUnitPrice:
+          type: number
+          description: 参考采购价 / 实际成交价
+          example: 8500.00
+        amount:
+          type: number
+          description: 金额 = 采购数量 * 采购单价
+          example: 85000.00
+        stockedInQuantity:
+          type: number
+          description: 累计已入库数量 (由PI回写)
+          example: 4
+        pendingStockInQuantity:
+          type: number
+          description: 未入库数量 (计算字段，只读 = 采购数量 - 累计已入库数量)
+          example: 6
+
+    PurchaseOrderCreateInput:
+      type: object
+      required:
+        - supplierId
+        - purchaser
+        - orderDate
+        - items
+      properties:
+        supplierId:
+          type: string
+          example: "sup_huaqiang"
+        purchaser:
+          type: string
+          example: "张伟"
+        orderDate:
+          type: string
+          format: date
+          example: "2026-07-06"
+        remark:
+          type: string
+          example: "补仓备货"
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - goodsId
+              - purchaseQuantity
+              - purchaseUnitPrice
+            properties:
+              goodsId:
+                type: string
+                example: "sku_iphone17_pro"
+              purchaseQuantity:
+                type: number
+                minimum: 1
+                example: 10
+              purchaseUnitPrice:
+                type: number
+                minimum: 0
+                example: 8500.00
+
+    # 采购入库 (PI)
+    StockIn:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pi_87654321"
+        stockInNo:
+          type: string
+          description: 入库单编号，格式为 PI{YYYYMMDD}-{4位序号}
+          example: "PI20260706-0001"
+        purchaseOrderId:
+          type: string
+          example: "po_12345678"
+        purchaseOrderNo:
+          type: string
+          example: "PO20260706-0001"
+        supplierId:
+          type: string
+          example: "sup_huaqiang"
+        supplierName:
+          type: string
+          example: "华强北电子供应链"
+        warehouseId:
+          type: string
+          example: "wh_shenzhen_01"
+        warehouseName:
+          type: string
+          example: "深圳华强北后仓"
+        operator:
+          type: string
+          description: 经办仓管员
+          example: "李强"
+        stockInDate:
+          type: string
+          format: date
+          example: "2026-07-06"
+        status:
+          type: string
+          description: |
+            入库单状态：
+            - `draft`: 草稿
+            - `confirmed`: 已确认 (已入库并更新库存，锁死数量)
+            - `voided`: 已作废 (回扣库存)
+          enum: [draft, confirmed, voided]
+          example: "confirmed"
+        totalAmount:
+          type: number
+          description: 实收计价总金额
+          example: 34000.00
+        remark:
+          type: string
+          example: "首批4台到仓，核对无误"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockInItem'
+
+    StockInItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pi_item_1"
+        goodsId:
+          type: string
+          example: "sku_iphone17_pro"
+        goodsCode:
+          type: string
+          example: "IPHONE-17-PRO"
+        goodsName:
+          type: string
+          example: "iPhone 17 Pro Max 256G"
+        specification:
+          type: string
+          example: "钛金属原色/256G"
+        unit:
+          type: string
+          example: "台"
+        purchaseQuantity:
+          type: number
+          description: 原采购订单中的采购总数
+          example: 10
+        pendingStockInQuantity:
+          type: number
+          description: 原采购订单中，生成此单前的未入库剩余数
+          example: 10
+        receivedQuantity:
+          type: number
+          description: 仓管录入的实际收到数量 (实收数量 <= 未入库数量，超收时阻断)
+          example: 4
+        stockInQuantity:
+          type: number
+          description: 确认入库的数量 (已确认后，系统自动生成存入，只读)
+          example: 4
+        purchaseUnitPrice:
+          type: number
+          example: 8500.00
+        amount:
+          type: number
+          description: 金额 = 入库数量 * 单价
+          example: 34000.00
+
+    StockInCreateInput:
+      type: object
+      required:
+        - purchaseOrderId
+        - warehouseId
+        - operator
+        - stockInDate
+        - items
+      properties:
+        purchaseOrderId:
+          type: string
+          example: "po_12345678"
+        warehouseId:
+          type: string
+          example: "wh_shenzhen_01"
+        operator:
+          type: string
+          example: "李强"
+        stockInDate:
+          type: string
+          format: date
+          example: "2026-07-06"
+        remark:
+          type: string
+          example: "分批入库"
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - goodsId
+              - receivedQuantity
+              - purchaseUnitPrice
+            properties:
+              goodsId:
+                type: string
+                example: "sku_iphone17_pro"
+              receivedQuantity:
+                type: number
+                minimum: 1
+                description: 填写的实收数量，不得超过未入库数
+                example: 4
+              purchaseUnitPrice:
+                type: number
+                minimum: 0
+                example: 8500.00
+
+    # 采购退货 (PR)
+    PurchaseReturn:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pr_998877"
+        purchaseReturnNo:
+          type: string
+          description: 退货单编号，PR{YYYYMMDD}-{4位序号}
+          example: "PR20260706-0001"
+        stockInId:
+          type: string
+          example: "pi_87654321"
+        stockInNo:
+          type: string
+          example: "PI20260706-0001"
+        supplierId:
+          type: string
+          example: "sup_huaqiang"
+        supplierName:
+          type: string
+          example: "华强北电子供应链"
+        operator:
+          type: string
+          example: "张伟"
+        returnDate:
+          type: string
+          format: date
+          example: "2026-07-06"
+        status:
+          type: string
+          enum: [draft, confirmed]
+          example: "confirmed"
+        totalAmount:
+          type: number
+          example: 8500.00
+        remark:
+          type: string
+          example: "外观划痕，申请退货1台"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseReturnItem'
+
+    PurchaseReturnItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pr_item_1"
+        goodsId:
+          type: string
+          example: "sku_iphone17_pro"
+        goodsCode:
+          type: string
+          example: "IPHONE-17-PRO"
+        goodsName:
+          type: string
+          example: "iPhone 17 Pro Max 256G"
+        specification:
+          type: string
+          example: "钛金属原色/256G"
+        unit:
+          type: string
+          example: "台"
+        stockInQuantity:
+          type: number
+          description: 原入库单入库数量
+          example: 4
+        returnQuantity:
+          type: number
+          description: 退货申请数量 (必须 <= 原入库单入库数)
+          example: 1
+        purchaseUnitPrice:
+          type: number
+          example: 8500.00
+        amount:
+          type: number
+          example: 8500.00
+
+    PurchaseReturnCreateInput:
+      type: object
+      required:
+        - stockInId
+        - operator
+        - returnDate
+        - items
+      properties:
+        stockInId:
+          type: string
+          example: "pi_87654321"
+        operator:
+          type: string
+          example: "张伟"
+        returnDate:
+          type: string
+          format: date
+          example: "2026-07-06"
+        remark:
+          type: string
+          example: "破损退回"
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - goodsId
+              - returnQuantity
+              - purchaseUnitPrice
+            properties:
+              goodsId:
+                type: string
+                example: "sku_iphone17_pro"
+              returnQuantity:
+                type: number
+                minimum: 1
+                example: 1
+              purchaseUnitPrice:
+                type: number
+                minimum: 0
+                example: 8500.00
+
+    # 退货出库 (PRO)
+    ReturnOutbound:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pro_554433"
+        returnOutboundNo:
+          type: string
+          description: 退货出库单号，格式 PRO{YYYYMMDD}-{4位序号}
+          example: "PRO20260706-0001"
+        purchaseReturnId:
+          type: string
+          example: "pr_998877"
+        purchaseReturnNo:
+          type: string
+          example: "PR20260706-0001"
+        supplierId:
+          type: string
+          example: "sup_huaqiang"
+        supplierName:
+          type: string
+          example: "华强北电子供应链"
+        warehouseId:
+          type: string
+          example: "wh_shenzhen_01"
+        warehouseName:
+          type: string
+          example: "深圳华强北后仓"
+        operator:
+          type: string
+          example: "李强"
+        outboundDate:
+          type: string
+          format: date
+          example: "2026-07-06"
+        status:
+          type: string
+          enum: [draft, confirmed]
+          example: "confirmed"
+        totalAmount:
+          type: number
+          example: 8500.00
+        remark:
+          type: string
+          example: "顺丰发出"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnOutboundItem'
+
+    ReturnOutboundItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pro_item_1"
+        goodsId:
+          type: string
+          example: "sku_iphone17_pro"
+        goodsCode:
+          type: string
+          example: "IPHONE-17-PRO"
+        goodsName:
+          type: string
+          example: "iPhone 17 Pro Max 256G"
+        specification:
+          type: string
+          example: "钛金属原色/256G"
+        unit:
+          type: string
+          example: "台"
+        returnQuantity:
+          type: number
+          description: 原退货单申请数量
+          example: 1
+        outboundQuantity:
+          type: number
+          description: 实际物理出库数量
+          example: 1
+        purchaseUnitPrice:
+          type: number
+          example: 8500.00
+        amount:
+          type: number
+          example: 8500.00
+
+    ReturnOutboundCreateInput:
+      type: object
+      required:
+        - purchaseReturnId
+        - warehouseId
+        - operator
+        - outboundDate
+        - items
+      properties:
+        purchaseReturnId:
+          type: string
+          example: "pr_998877"
+        warehouseId:
+          type: string
+          example: "wh_shenzhen_01"
+        operator:
+          type: string
+          example: "李强"
+        outboundDate:
+          type: string
+          format: date
+          example: "2026-07-06"
+        remark:
+          type: string
+          example: "退货出库寄回"
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - goodsId
+              - outboundQuantity
+              - purchaseUnitPrice
+            properties:
+              goodsId:
+                type: string
+                example: "sku_iphone17_pro"
+              outboundQuantity:
+                type: number
+                minimum: 1
+                example: 1
+              purchaseUnitPrice:
+                type: number
+                minimum: 0
+                example: 8500.00
+
+    # 库存流水 (FL)
+    InventoryFlow:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "fl_987654"
+        flowNo:
+          type: string
+          description: 流水号，格式 FL{YYYYMMDD}-{8位序号}
+          example: "FL20260706-00000001"
+        goodsId:
+          type: string
+          example: "sku_iphone17_pro"
+        goodsCode:
+          type: string
+          example: "IPHONE-17-PRO"
+        goodsName:
+          type: string
+          example: "iPhone 17 Pro Max 256G"
+        specification:
+          type: string
+          example: "钛金属原色/256G"
+        unit:
+          type: string
+          example: "台"
+        warehouseId:
+          type: string
+          example: "wh_shenzhen_01"
+        warehouseName:
+          type: string
+          example: "深圳华强北后仓"
+        flowType:
+          type: string
+          description: |
+            流水类型：
+            - `purchase_in`: 采购入库
+            - `sale_out`: 销售出库
+            - `retail_sale`: 零售收银
+            - `transfer`: 调拨
+            - `stock_take`: 盘点
+            - `loss`: 报损
+          enum: [purchase_in, sale_out, retail_sale, transfer, inventory_check, loss]
+          example: "purchase_in"
+        direction:
+          type: string
+          description: 变动方向 (in = 增加现存, out = 扣减现存)
+          enum: [in, out]
+          example: "in"
+        quantity:
+          type: number
+          description: 本次变动数量 (恒为正数)
+          example: 4
+        balanceQuantity:
+          type: number
+          description: 变动后对应的**现存数量**
+          example: 24
+        sourceId:
+          type: string
+          description: 关联的来源单据ID
+          example: "pi_87654321"
+        sourceNo:
+          type: string
+          description: 关联的来源单据号 (如入库单号 PI20260706-0001)
+          example: "PI20260706-0001"
+        operator:
+          type: string
+          description: 执行操作员
+          example: "李强"
+        createTime:
+          type: string
+          format: date-time
+          example: "2026-07-06T18:00:00Z"
+
+    # 即时库存
+    InstantStock:
+      type: object
+      properties:
+        goodsId:
+          type: string
+          example: "sku_iphone17_pro"
+        goodsCode:
+          type: string
+          example: "IPHONE-17-PRO"
+        goodsName:
+          type: string
+          example: "iPhone 17 Pro Max 256G"
+        specification:
+          type: string
+          example: "钛金属原色/256G"
+        unit:
+          type: string
+          example: "台"
+        warehouseId:
+          type: string
+          example: "wh_shenzhen_01"
+        warehouseName:
+          type: string
+          example: "深圳华强北后仓"
+        existingQuantity:
+          type: number
+          description: 现存数量 (仓库内物理存在的真实数量)
+          example: 24
+        occupiedQuantity:
+          type: number
+          description: 占用数量 (已被销售订单锁定但还未执行出库的数量)
+          example: 5
+        availableQuantity:
+          type: number
+          description: 可用数量 (现存数量 - 占用数量，商家可做新承诺的数量)
+          example: 19
+        referencePrice:
+          type: number
+          description: 参考采购价 / 默认批发价
+          example: 8500.00

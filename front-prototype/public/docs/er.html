@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>强盛科技进销存 + WMS 数据库设计 ER 图</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0e1117;
+      --panel: #151a23;
+      --panel-2: #1c2430;
+      --line: #2b3444;
+      --text: #e7edf7;
+      --muted: #99a7ba;
+      --accent: #39c5bb;
+      --accent-2: #f4b860;
+      --danger: #ff6b7a;
+      --code: #0a0d12;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: #111722;
+      padding: 28px 40px 22px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .title-row {
+      align-items: flex-end;
+      display: flex;
+      gap: 20px;
+      justify-content: space-between;
+    }
+
+    h1 {
+      font-size: 28px;
+      letter-spacing: 0;
+      line-height: 1.2;
+      margin: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin: 8px 0 0;
+      max-width: 980px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .badge {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 5px 11px;
+      white-space: nowrap;
+    }
+
+    main {
+      padding: 28px 40px 56px;
+    }
+
+    section {
+      margin: 0 auto 28px;
+      max-width: 1720px;
+    }
+
+    .section-head {
+      align-items: center;
+      display: flex;
+      gap: 14px;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      font-size: 20px;
+      letter-spacing: 0;
+      margin: 0;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+    }
+
+    .er-panel {
+      overflow: auto;
+      padding: 20px;
+      min-height: 560px;
+    }
+
+    .mermaid {
+      min-width: 1580px;
+      margin: 0;
+    }
+
+    .fallback {
+      color: var(--accent-2);
+      display: none;
+      margin-bottom: 12px;
+    }
+
+    .toolbar {
+      align-items: center;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .toolbar input {
+      background: #0b0f16;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      padding: 10px 12px;
+      width: min(420px, 100%);
+    }
+
+    .ddl-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+    }
+
+    .ddl-card {
+      overflow: hidden;
+    }
+
+    .ddl-card header {
+      background: var(--panel-2);
+      border-bottom: 1px solid var(--line);
+      padding: 13px 16px;
+      position: static;
+    }
+
+    .ddl-card h3 {
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .ddl-card p {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 4px 0 0;
+    }
+
+    pre {
+      background: var(--code);
+      color: #dce6f5;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12.5px;
+      line-height: 1.55;
+      margin: 0;
+      overflow: auto;
+      padding: 16px;
+      tab-size: 2;
+      white-space: pre;
+    }
+
+    details {
+      margin-top: 14px;
+    }
+
+    summary {
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 10px 0;
+    }
+
+    @media (max-width: 760px) {
+      header,
+      main {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .title-row,
+      .section-head,
+      .toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .ddl-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mermaid {
+        min-width: 1200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-row">
+      <div>
+        <h1>强盛科技进销存 + WMS 数据库设计</h1>
+        <p class="subtitle">基于 PRD 与 context 文档设计，不从现有代码推断表结构。页面覆盖用户列出的 ERP 16 张表与 WMS 10 张表，共 26 张核心业务表。</p>
+      </div>
+      <a href="#ddl">跳转到 DDL</a>
+    </div>
+    <div class="badge-row">
+      <span class="badge">MySQL 8.0</span>
+      <span class="badge">Mermaid erDiagram</span>
+      <span class="badge">字段 / 类型 / 注释 / 默认值 / 索引</span>
+      <span class="badge">ERP + WMS 关系追溯</span>
+    </div>
+  </header>
+
+  <main>
+    <section aria-labelledby="er-title">
+      <div class="section-head">
+        <h2 id="er-title">ER 图</h2>
+        <span class="hint">支持横向滚动查看完整关系图</span>
+      </div>
+      <div class="panel er-panel">
+        <div id="mermaid-fallback" class="fallback">Mermaid 渲染库加载失败，已保留 erDiagram 源码供查看。</div>
+        <pre id="er-source" class="mermaid"></pre>
+      </div>
+      <details>
+        <summary>查看 Mermaid erDiagram 源码</summary>
+        <pre id="er-raw"></pre>
+      </details>
+    </section>
+
+    <section id="ddl" aria-labelledby="ddl-title">
+      <div class="section-head">
+        <h2 id="ddl-title">DDL 建表语句</h2>
+        <span class="hint">每张表包含字段类型、COMMENT、DEFAULT、KEY / UNIQUE KEY / FK</span>
+      </div>
+      <div class="toolbar">
+        <input id="table-filter" type="search" placeholder="搜索表名，例如 purchase_orders / wave / inventory_flow" />
+        <span id="table-count" class="hint"></span>
+      </div>
+      <div id="ddl-grid" class="ddl-grid"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    const tables = [
+      {
+        name: "suppliers",
+        group: "ERP 基础资料",
+        comment: "供应商档案",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("supplier_code", "VARCHAR(32)", "供应商编码"),
+          col("supplier_name", "VARCHAR(120)", "供应商名称"),
+          col("contact_name", "VARCHAR(60)", "联系人", { nullable: true }),
+          col("contact_phone", "VARCHAR(40)", "联系方式", { nullable: true }),
+          col("settlement_method", "ENUM('CASH','MONTHLY','CREDIT')", "结算方式", { default: "'CREDIT'" }),
+          col("payment_terms_days", "INT", "账期天数", { default: "0" }),
+          col("status", "ENUM('ENABLED','DISABLED')", "启用状态", { default: "'ENABLED'" }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_suppliers_code", ["supplier_code"]),
+          key("idx_suppliers_name", ["supplier_name"]),
+          key("idx_suppliers_status", ["status"])
+        ]
+      },
+      {
+        name: "customers",
+        group: "ERP 基础资料",
+        comment: "客户档案",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("customer_code", "VARCHAR(32)", "客户编码"),
+          col("customer_name", "VARCHAR(120)", "客户名称"),
+          col("contact_name", "VARCHAR(60)", "联系人", { nullable: true }),
+          col("contact_phone", "VARCHAR(40)", "联系方式", { nullable: true }),
+          col("customer_level", "VARCHAR(32)", "客户等级", { default: "'NORMAL'" }),
+          col("price_level", "VARCHAR(32)", "价格级别", { default: "'WHOLESALE'" }),
+          col("settlement_method", "ENUM('CASH','MONTHLY','CREDIT')", "结算方式", { default: "'CREDIT'" }),
+          col("credit_limit", "DECIMAL(14,2)", "信用额度", { default: "0.00" }),
+          col("payment_terms_days", "INT", "账期天数", { default: "0" }),
+          col("status", "ENUM('ENABLED','DISABLED')", "启用状态", { default: "'ENABLED'" }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_customers_code", ["customer_code"]),
+          key("idx_customers_name", ["customer_name"]),
+          key("idx_customers_status", ["status"])
+        ]
+      },
+      {
+        name: "products",
+        group: "ERP 基础资料",
+        comment: "商品档案",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("product_code", "VARCHAR(32)", "商品编码"),
+          col("product_name", "VARCHAR(160)", "商品名称"),
+          col("barcode", "VARCHAR(64)", "商品条码", { nullable: true }),
+          col("category_name", "VARCHAR(80)", "商品分类", { nullable: true }),
+          col("spec", "VARCHAR(120)", "规格", { nullable: true }),
+          col("unit", "VARCHAR(20)", "单位", { default: "'件'" }),
+          col("default_wholesale_price", "DECIMAL(14,2)", "默认批发价", { default: "0.00" }),
+          col("default_retail_price", "DECIMAL(14,2)", "默认零售价", { default: "0.00" }),
+          col("reference_purchase_price", "DECIMAL(14,2)", "参考采购价", { default: "0.00" }),
+          col("safety_stock_qty", "DECIMAL(14,3)", "安全库存量", { default: "0.000" }),
+          col("status", "ENUM('ENABLED','DISABLED')", "启用状态", { default: "'ENABLED'" }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_products_code", ["product_code"]),
+          key("idx_products_barcode", ["barcode"]),
+          key("idx_products_name", ["product_name"]),
+          key("idx_products_status", ["status"])
+        ]
+      },
+      {
+        name: "warehouses",
+        group: "ERP 基础资料",
+        comment: "仓库档案",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("warehouse_code", "VARCHAR(32)", "仓库编码"),
+          col("warehouse_name", "VARCHAR(120)", "仓库名称"),
+          col("warehouse_type", "ENUM('STORE','BACK_WAREHOUSE','WMS','RETURN')", "仓库类型", { default: "'BACK_WAREHOUSE'" }),
+          col("manager_name", "VARCHAR(60)", "负责人", { nullable: true }),
+          col("address", "VARCHAR(255)", "地址", { nullable: true }),
+          col("status", "ENUM('ENABLED','DISABLED')", "启用状态", { default: "'ENABLED'" }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_warehouses_code", ["warehouse_code"]),
+          key("idx_warehouses_type", ["warehouse_type"]),
+          key("idx_warehouses_status", ["status"])
+        ]
+      },
+      {
+        name: "purchase_orders",
+        group: "ERP 采购管理",
+        comment: "采购订单 PO，记录采购意图",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("po_no", "VARCHAR(32)", "采购订单号"),
+          col("supplier_id", "BIGINT UNSIGNED", "供应商ID"),
+          col("warehouse_id", "BIGINT UNSIGNED", "默认入库仓库ID"),
+          col("purchaser_name", "VARCHAR(60)", "采购员"),
+          col("order_date", "DATE", "订单日期"),
+          col("status", "ENUM('DRAFT','PENDING_APPROVAL','APPROVED','PARTIAL_STOCK_IN','COMPLETED','VOIDED','CANCELLED')", "单据状态", { default: "'DRAFT'" }),
+          col("total_qty", "DECIMAL(14,3)", "采购总数量", { default: "0.000" }),
+          col("stock_in_qty", "DECIMAL(14,3)", "累计入库数量", { default: "0.000" }),
+          col("total_amount", "DECIMAL(14,2)", "采购总金额", { default: "0.00" }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_purchase_orders_no", ["po_no"]),
+          key("idx_purchase_orders_supplier", ["supplier_id"]),
+          key("idx_purchase_orders_warehouse", ["warehouse_id"]),
+          key("idx_purchase_orders_status_date", ["status", "order_date"])
+        ],
+        fks: [
+          fk("fk_po_supplier", ["supplier_id"], "suppliers", ["id"]),
+          fk("fk_po_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "purchase_order_items",
+        group: "ERP 采购管理",
+        comment: "采购订单明细",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("purchase_order_id", "BIGINT UNSIGNED", "采购订单ID"),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("product_code", "VARCHAR(32)", "商品编码快照"),
+          col("product_name", "VARCHAR(160)", "商品名称快照"),
+          col("barcode", "VARCHAR(64)", "商品条码快照", { nullable: true }),
+          col("spec", "VARCHAR(120)", "规格快照", { nullable: true }),
+          col("unit", "VARCHAR(20)", "单位快照", { default: "'件'" }),
+          col("purchase_qty", "DECIMAL(14,3)", "采购数量", { default: "0.000" }),
+          col("stock_in_qty", "DECIMAL(14,3)", "累计入库数量", { default: "0.000" }),
+          col("remaining_qty", "DECIMAL(14,3)", "未入库数量", { default: "0.000" }),
+          col("purchase_price", "DECIMAL(14,2)", "采购单价", { default: "0.00" }),
+          col("amount", "DECIMAL(14,2)", "含税金额", { default: "0.00" }),
+          col("line_remark", "VARCHAR(255)", "行备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          key("idx_poi_po", ["purchase_order_id"]),
+          key("idx_poi_product", ["product_id"]),
+          key("idx_poi_code", ["product_code"])
+        ],
+        fks: [
+          fk("fk_poi_po", ["purchase_order_id"], "purchase_orders", ["id"]),
+          fk("fk_poi_product", ["product_id"], "products", ["id"])
+        ]
+      },
+      {
+        name: "stock_in",
+        group: "ERP 采购管理",
+        comment: "采购入库单 PI，执行入库",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("pi_no", "VARCHAR(32)", "采购入库单号"),
+          col("purchase_order_id", "BIGINT UNSIGNED", "来源采购订单ID"),
+          col("supplier_id", "BIGINT UNSIGNED", "供应商ID"),
+          col("warehouse_id", "BIGINT UNSIGNED", "入库仓库ID"),
+          col("stock_in_date", "DATE", "入库日期"),
+          col("status", "ENUM('DRAFT','CONFIRMED','VOIDED')", "单据状态", { default: "'DRAFT'" }),
+          col("received_total_qty", "DECIMAL(14,3)", "实收总数量", { default: "0.000" }),
+          col("stock_in_total_qty", "DECIMAL(14,3)", "入库总数量", { default: "0.000" }),
+          col("total_amount", "DECIMAL(14,2)", "入库总金额", { default: "0.00" }),
+          col("confirmed_at", "DATETIME", "确认入库时间", { nullable: true }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_stock_in_no", ["pi_no"]),
+          key("idx_stock_in_po", ["purchase_order_id"]),
+          key("idx_stock_in_supplier", ["supplier_id"]),
+          key("idx_stock_in_warehouse", ["warehouse_id"]),
+          key("idx_stock_in_status_date", ["status", "stock_in_date"])
+        ],
+        fks: [
+          fk("fk_si_po", ["purchase_order_id"], "purchase_orders", ["id"]),
+          fk("fk_si_supplier", ["supplier_id"], "suppliers", ["id"]),
+          fk("fk_si_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "stock_in_items",
+        group: "ERP 采购管理",
+        comment: "采购入库单明细",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("stock_in_id", "BIGINT UNSIGNED", "采购入库单ID"),
+          col("purchase_order_item_id", "BIGINT UNSIGNED", "来源采购订单明细ID"),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("product_code", "VARCHAR(32)", "商品编码快照"),
+          col("product_name", "VARCHAR(160)", "商品名称快照"),
+          col("barcode", "VARCHAR(64)", "商品条码快照", { nullable: true }),
+          col("spec", "VARCHAR(120)", "规格快照", { nullable: true }),
+          col("unit", "VARCHAR(20)", "单位快照", { default: "'件'" }),
+          col("order_qty", "DECIMAL(14,3)", "订单数量", { default: "0.000" }),
+          col("remaining_before_qty", "DECIMAL(14,3)", "入库前未入库数量", { default: "0.000" }),
+          col("received_qty", "DECIMAL(14,3)", "实收数量", { default: "0.000" }),
+          col("stock_in_qty", "DECIMAL(14,3)", "入库数量", { default: "0.000" }),
+          col("unit_price", "DECIMAL(14,2)", "采购单价", { default: "0.00" }),
+          col("amount", "DECIMAL(14,2)", "含税金额", { default: "0.00" }),
+          col("line_remark", "VARCHAR(255)", "行备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          key("idx_sii_stock_in", ["stock_in_id"]),
+          key("idx_sii_poi", ["purchase_order_item_id"]),
+          key("idx_sii_product", ["product_id"])
+        ],
+        fks: [
+          fk("fk_sii_stock_in", ["stock_in_id"], "stock_in", ["id"]),
+          fk("fk_sii_poi", ["purchase_order_item_id"], "purchase_order_items", ["id"]),
+          fk("fk_sii_product", ["product_id"], "products", ["id"])
+        ]
+      },
+      {
+        name: "purchase_returns",
+        group: "ERP 采购管理",
+        comment: "采购退货单 PR，基于采购入库发起退货申请",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("pr_no", "VARCHAR(32)", "采购退货单号"),
+          col("stock_in_id", "BIGINT UNSIGNED", "来源采购入库单ID"),
+          col("supplier_id", "BIGINT UNSIGNED", "供应商ID"),
+          col("warehouse_id", "BIGINT UNSIGNED", "退货仓库ID"),
+          col("return_date", "DATE", "退货日期"),
+          col("status", "ENUM('DRAFT','CONFIRMED','VOIDED')", "单据状态", { default: "'DRAFT'" }),
+          col("total_return_qty", "DECIMAL(14,3)", "退货总数量", { default: "0.000" }),
+          col("total_amount", "DECIMAL(14,2)", "退货总金额", { default: "0.00" }),
+          col("return_reason", "VARCHAR(255)", "退货原因", { nullable: true }),
+          col("confirmed_at", "DATETIME", "确认退货时间", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_purchase_returns_no", ["pr_no"]),
+          key("idx_pr_stock_in", ["stock_in_id"]),
+          key("idx_pr_supplier", ["supplier_id"]),
+          key("idx_pr_warehouse", ["warehouse_id"]),
+          key("idx_pr_status_date", ["status", "return_date"])
+        ],
+        fks: [
+          fk("fk_pr_stock_in", ["stock_in_id"], "stock_in", ["id"]),
+          fk("fk_pr_supplier", ["supplier_id"], "suppliers", ["id"]),
+          fk("fk_pr_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "purchase_return_items",
+        group: "ERP 采购管理",
+        comment: "采购退货单明细",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("purchase_return_id", "BIGINT UNSIGNED", "采购退货单ID"),
+          col("stock_in_item_id", "BIGINT UNSIGNED", "来源采购入库明细ID"),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("product_code", "VARCHAR(32)", "商品编码快照"),
+          col("product_name", "VARCHAR(160)", "商品名称快照"),
+          col("spec", "VARCHAR(120)", "规格快照", { nullable: true }),
+          col("unit", "VARCHAR(20)", "单位快照", { default: "'件'" }),
+          col("stock_in_qty", "DECIMAL(14,3)", "原入库数量", { default: "0.000" }),
+          col("returned_qty", "DECIMAL(14,3)", "已退货数量", { default: "0.000" }),
+          col("return_qty", "DECIMAL(14,3)", "本次退货数量", { default: "0.000" }),
+          col("unit_price", "DECIMAL(14,2)", "退货单价", { default: "0.00" }),
+          col("amount", "DECIMAL(14,2)", "退货金额", { default: "0.00" }),
+          col("return_reason", "VARCHAR(255)", "行退货原因", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          key("idx_pri_return", ["purchase_return_id"]),
+          key("idx_pri_stock_in_item", ["stock_in_item_id"]),
+          key("idx_pri_product", ["product_id"])
+        ],
+        fks: [
+          fk("fk_pri_return", ["purchase_return_id"], "purchase_returns", ["id"]),
+          fk("fk_pri_stock_in_item", ["stock_in_item_id"], "stock_in_items", ["id"]),
+          fk("fk_pri_product", ["product_id"], "products", ["id"])
+        ]
+      },
+      {
+        name: "return_outbounds",
+        group: "ERP 采购管理",
+        comment: "采购退货出库单 PRO，执行退回供应商出库",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("pro_no", "VARCHAR(32)", "采购退货出库单号"),
+          col("purchase_return_id", "BIGINT UNSIGNED", "来源采购退货单ID"),
+          col("supplier_id", "BIGINT UNSIGNED", "供应商ID"),
+          col("warehouse_id", "BIGINT UNSIGNED", "出库仓库ID"),
+          col("outbound_date", "DATE", "出库日期"),
+          col("status", "ENUM('DRAFT','CONFIRMED','VOIDED')", "单据状态", { default: "'DRAFT'" }),
+          col("total_out_qty", "DECIMAL(14,3)", "出库总数量", { default: "0.000" }),
+          col("total_amount", "DECIMAL(14,2)", "出库总金额", { default: "0.00" }),
+          col("confirmed_at", "DATETIME", "确认出库时间", { nullable: true }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_return_outbounds_no", ["pro_no"]),
+          key("idx_ro_return", ["purchase_return_id"]),
+          key("idx_ro_supplier", ["supplier_id"]),
+          key("idx_ro_warehouse", ["warehouse_id"]),
+          key("idx_ro_status_date", ["status", "outbound_date"])
+        ],
+        fks: [
+          fk("fk_ro_return", ["purchase_return_id"], "purchase_returns", ["id"]),
+          fk("fk_ro_supplier", ["supplier_id"], "suppliers", ["id"]),
+          fk("fk_ro_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "return_outbound_items",
+        group: "ERP 采购管理",
+        comment: "采购退货出库单明细",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("return_outbound_id", "BIGINT UNSIGNED", "采购退货出库单ID"),
+          col("purchase_return_item_id", "BIGINT UNSIGNED", "采购退货明细ID"),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("product_code", "VARCHAR(32)", "商品编码快照"),
+          col("product_name", "VARCHAR(160)", "商品名称快照"),
+          col("spec", "VARCHAR(120)", "规格快照", { nullable: true }),
+          col("unit", "VARCHAR(20)", "单位快照", { default: "'件'" }),
+          col("return_qty", "DECIMAL(14,3)", "申请退货数量", { default: "0.000" }),
+          col("outbound_qty", "DECIMAL(14,3)", "实际出库数量", { default: "0.000" }),
+          col("unit_price", "DECIMAL(14,2)", "出库单价", { default: "0.00" }),
+          col("amount", "DECIMAL(14,2)", "出库金额", { default: "0.00" }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          key("idx_roi_outbound", ["return_outbound_id"]),
+          key("idx_roi_return_item", ["purchase_return_item_id"]),
+          key("idx_roi_product", ["product_id"])
+        ],
+        fks: [
+          fk("fk_roi_outbound", ["return_outbound_id"], "return_outbounds", ["id"]),
+          fk("fk_roi_return_item", ["purchase_return_item_id"], "purchase_return_items", ["id"]),
+          fk("fk_roi_product", ["product_id"], "products", ["id"])
+        ]
+      },
+      {
+        name: "sales_orders",
+        group: "ERP 销售管理",
+        comment: "销售订单 SO，记录批发销售意图并产生占用",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("so_no", "VARCHAR(32)", "销售订单号"),
+          col("customer_id", "BIGINT UNSIGNED", "客户ID"),
+          col("warehouse_id", "BIGINT UNSIGNED", "默认出库仓库ID"),
+          col("sales_user_name", "VARCHAR(60)", "业务员"),
+          col("order_date", "DATE", "订单日期"),
+          col("status", "ENUM('DRAFT','PENDING_APPROVAL','APPROVED','PARTIAL_OUTBOUND','COMPLETED','CANCELLED')", "单据状态", { default: "'DRAFT'" }),
+          col("total_qty", "DECIMAL(14,3)", "销售总数量", { default: "0.000" }),
+          col("outbound_qty", "DECIMAL(14,3)", "累计出库数量", { default: "0.000" }),
+          col("total_amount", "DECIMAL(14,2)", "销售总金额", { default: "0.00" }),
+          col("credit_warning", "TINYINT(1)", "是否触发信用额度黄色预警", { default: "0" }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_sales_orders_no", ["so_no"]),
+          key("idx_sales_orders_customer", ["customer_id"]),
+          key("idx_sales_orders_warehouse", ["warehouse_id"]),
+          key("idx_sales_orders_status_date", ["status", "order_date"])
+        ],
+        fks: [
+          fk("fk_so_customer", ["customer_id"], "customers", ["id"]),
+          fk("fk_so_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "sales_order_items",
+        group: "ERP 销售管理",
+        comment: "销售订单明细",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("sales_order_id", "BIGINT UNSIGNED", "销售订单ID"),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("product_code", "VARCHAR(32)", "商品编码快照"),
+          col("product_name", "VARCHAR(160)", "商品名称快照"),
+          col("barcode", "VARCHAR(64)", "商品条码快照", { nullable: true }),
+          col("spec", "VARCHAR(120)", "规格快照", { nullable: true }),
+          col("unit", "VARCHAR(20)", "单位快照", { default: "'件'" }),
+          col("sale_qty", "DECIMAL(14,3)", "销售数量", { default: "0.000" }),
+          col("occupied_qty", "DECIMAL(14,3)", "占用数量", { default: "0.000" }),
+          col("outbound_qty", "DECIMAL(14,3)", "累计出库数量", { default: "0.000" }),
+          col("remaining_qty", "DECIMAL(14,3)", "未出库数量", { default: "0.000" }),
+          col("sale_price", "DECIMAL(14,2)", "成交单价", { default: "0.00" }),
+          col("amount", "DECIMAL(14,2)", "销售金额", { default: "0.00" }),
+          col("line_remark", "VARCHAR(255)", "行备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          key("idx_soi_so", ["sales_order_id"]),
+          key("idx_soi_product", ["product_id"]),
+          key("idx_soi_code", ["product_code"])
+        ],
+        fks: [
+          fk("fk_soi_so", ["sales_order_id"], "sales_orders", ["id"]),
+          fk("fk_soi_product", ["product_id"], "products", ["id"])
+        ]
+      },
+      {
+        name: "sales_outbounds",
+        group: "ERP 销售管理",
+        comment: "销售出库单 SOO，执行销售出库并释放占用",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("soo_no", "VARCHAR(32)", "销售出库单号"),
+          col("sales_order_id", "BIGINT UNSIGNED", "来源销售订单ID"),
+          col("customer_id", "BIGINT UNSIGNED", "客户ID"),
+          col("warehouse_id", "BIGINT UNSIGNED", "出库仓库ID"),
+          col("outbound_date", "DATE", "出库日期"),
+          col("status", "ENUM('DRAFT','CONFIRMED','VOIDED')", "单据状态", { default: "'DRAFT'" }),
+          col("total_out_qty", "DECIMAL(14,3)", "出库总数量", { default: "0.000" }),
+          col("total_amount", "DECIMAL(14,2)", "出库总金额", { default: "0.00" }),
+          col("confirmed_at", "DATETIME", "确认出库时间", { nullable: true }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_sales_outbounds_no", ["soo_no"]),
+          key("idx_soo_so", ["sales_order_id"]),
+          key("idx_soo_customer", ["customer_id"]),
+          key("idx_soo_warehouse", ["warehouse_id"]),
+          key("idx_soo_status_date", ["status", "outbound_date"])
+        ],
+        fks: [
+          fk("fk_soo_so", ["sales_order_id"], "sales_orders", ["id"]),
+          fk("fk_soo_customer", ["customer_id"], "customers", ["id"]),
+          fk("fk_soo_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "sales_outbound_items",
+        group: "ERP 销售管理",
+        comment: "销售出库单明细",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("sales_outbound_id", "BIGINT UNSIGNED", "销售出库单ID"),
+          col("sales_order_item_id", "BIGINT UNSIGNED", "来源销售订单明细ID"),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("product_code", "VARCHAR(32)", "商品编码快照"),
+          col("product_name", "VARCHAR(160)", "商品名称快照"),
+          col("spec", "VARCHAR(120)", "规格快照", { nullable: true }),
+          col("unit", "VARCHAR(20)", "单位快照", { default: "'件'" }),
+          col("order_qty", "DECIMAL(14,3)", "订单数量", { default: "0.000" }),
+          col("outbound_qty", "DECIMAL(14,3)", "出库数量", { default: "0.000" }),
+          col("sale_price", "DECIMAL(14,2)", "成交单价", { default: "0.00" }),
+          col("amount", "DECIMAL(14,2)", "出库金额", { default: "0.00" }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          key("idx_sooi_outbound", ["sales_outbound_id"]),
+          key("idx_sooi_order_item", ["sales_order_item_id"]),
+          key("idx_sooi_product", ["product_id"])
+        ],
+        fks: [
+          fk("fk_sooi_outbound", ["sales_outbound_id"], "sales_outbounds", ["id"]),
+          fk("fk_sooi_order_item", ["sales_order_item_id"], "sales_order_items", ["id"]),
+          fk("fk_sooi_product", ["product_id"], "products", ["id"])
+        ]
+      },
+      {
+        name: "inbound_rcv",
+        group: "WMS 入库管理",
+        comment: "WMS 收货单 RCV，关联 ERP 采购订单",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("rcv_no", "VARCHAR(32)", "收货单号"),
+          col("purchase_order_id", "BIGINT UNSIGNED", "来源 ERP 采购订单ID"),
+          col("supplier_id", "BIGINT UNSIGNED", "供应商ID"),
+          col("warehouse_id", "BIGINT UNSIGNED", "收货仓库ID"),
+          col("area_code", "VARCHAR(32)", "库区编码", { nullable: true }),
+          col("rcv_date", "DATE", "收货日期"),
+          col("status", "ENUM('DRAFT','RECEIVED','QC_PASSED','QC_FAILED','PUTAWAY','VOIDED')", "收货状态", { default: "'DRAFT'" }),
+          col("qc_mode", "ENUM('NONE','SAMPLE','FULL')", "质检方式", { default: "'SAMPLE'" }),
+          col("total_po_qty", "DECIMAL(14,3)", "采购总数量", { default: "0.000" }),
+          col("total_received_qty", "DECIMAL(14,3)", "实收总数量", { default: "0.000" }),
+          col("total_qualified_qty", "DECIMAL(14,3)", "合格总数量", { default: "0.000" }),
+          col("total_unqualified_qty", "DECIMAL(14,3)", "不合格总数量", { default: "0.000" }),
+          col("label_batch_no", "VARCHAR(64)", "收货标签批次号", { nullable: true }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_inbound_rcv_no", ["rcv_no"]),
+          key("idx_rcv_po", ["purchase_order_id"]),
+          key("idx_rcv_supplier", ["supplier_id"]),
+          key("idx_rcv_warehouse", ["warehouse_id"]),
+          key("idx_rcv_status_date", ["status", "rcv_date"])
+        ],
+        fks: [
+          fk("fk_rcv_po", ["purchase_order_id"], "purchase_orders", ["id"]),
+          fk("fk_rcv_supplier", ["supplier_id"], "suppliers", ["id"]),
+          fk("fk_rcv_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "inbound_rcv_items",
+        group: "WMS 入库管理",
+        comment: "WMS 收货明细",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("inbound_rcv_id", "BIGINT UNSIGNED", "收货单ID"),
+          col("purchase_order_item_id", "BIGINT UNSIGNED", "来源采购订单明细ID"),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("product_code", "VARCHAR(32)", "商品编码快照"),
+          col("product_name", "VARCHAR(160)", "商品名称快照"),
+          col("spec", "VARCHAR(120)", "规格快照", { nullable: true }),
+          col("unit", "VARCHAR(20)", "单位快照", { default: "'件'" }),
+          col("po_qty", "DECIMAL(14,3)", "采购数量", { default: "0.000" }),
+          col("received_qty", "DECIMAL(14,3)", "实收数量", { default: "0.000" }),
+          col("qualified_qty", "DECIMAL(14,3)", "合格数量", { default: "0.000" }),
+          col("unqualified_qty", "DECIMAL(14,3)", "不合格数量", { default: "0.000" }),
+          col("unqualified_reason", "VARCHAR(255)", "不合格原因", { nullable: true }),
+          col("label_barcode", "VARCHAR(64)", "收货标签条码", { nullable: true }),
+          col("putaway_location_code", "VARCHAR(64)", "实际上架货位", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          key("idx_rcvi_rcv", ["inbound_rcv_id"]),
+          key("idx_rcvi_poi", ["purchase_order_item_id"]),
+          key("idx_rcvi_product", ["product_id"]),
+          key("idx_rcvi_label", ["label_barcode"])
+        ],
+        fks: [
+          fk("fk_rcvi_rcv", ["inbound_rcv_id"], "inbound_rcv", ["id"]),
+          fk("fk_rcvi_poi", ["purchase_order_item_id"], "purchase_order_items", ["id"]),
+          fk("fk_rcvi_product", ["product_id"], "products", ["id"])
+        ]
+      },
+      {
+        name: "wave",
+        group: "WMS 出库管理",
+        comment: "波次单 WAVE，聚合销售订单并分配拣货",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("wave_no", "VARCHAR(32)", "波次单号"),
+          col("wave_type", "ENUM('SYSTEM','MANUAL')", "波次类型", { default: "'SYSTEM'" }),
+          col("primary_sales_order_id", "BIGINT UNSIGNED", "主来源销售订单ID", { nullable: true }),
+          col("warehouse_id", "BIGINT UNSIGNED", "作业仓库ID"),
+          col("carrier_name", "VARCHAR(80)", "承运商", { nullable: true }),
+          col("route_name", "VARCHAR(80)", "线路", { nullable: true }),
+          col("priority", "ENUM('LOW','NORMAL','HIGH','URGENT')", "发货优先级", { default: "'NORMAL'" }),
+          col("source_order_refs", "JSON", "聚合订单引用列表", { nullable: true }),
+          col("order_count", "INT", "订单数量", { default: "0" }),
+          col("status", "ENUM('DRAFT','PICKING','PICKED','CHECKED','SHIPPED','VOIDED')", "波次状态", { default: "'DRAFT'" }),
+          col("picker_user_name", "VARCHAR(60)", "拣货员", { nullable: true }),
+          col("planned_at", "DATETIME", "计划生成时间", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_wave_no", ["wave_no"]),
+          key("idx_wave_so", ["primary_sales_order_id"]),
+          key("idx_wave_warehouse", ["warehouse_id"]),
+          key("idx_wave_status", ["status"]),
+          key("idx_wave_carrier_route", ["carrier_name", "route_name"])
+        ],
+        fks: [
+          fk("fk_wave_so", ["primary_sales_order_id"], "sales_orders", ["id"]),
+          fk("fk_wave_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "pick_tasks",
+        group: "WMS 出库管理",
+        comment: "拣货任务 PICK，PDA 扫描执行",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("pick_no", "VARCHAR(32)", "拣货单号"),
+          col("wave_id", "BIGINT UNSIGNED", "波次ID"),
+          col("sales_order_id", "BIGINT UNSIGNED", "销售订单ID", { nullable: true }),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("warehouse_id", "BIGINT UNSIGNED", "仓库ID"),
+          col("from_location_code", "VARCHAR(64)", "拣货货位编码", { nullable: true }),
+          col("pick_mode", "ENUM('ORDER','PICK_AND_SORT','BATCH_THEN_SORT')", "拣货模式", { default: "'ORDER'" }),
+          col("assigned_user_name", "VARCHAR(60)", "分配拣货员", { nullable: true }),
+          col("order_qty", "DECIMAL(14,3)", "应拣数量", { default: "0.000" }),
+          col("picked_qty", "DECIMAL(14,3)", "已拣数量", { default: "0.000" }),
+          col("status", "ENUM('PENDING','PICKING','PICKED','EXCEPTION')", "拣货状态", { default: "'PENDING'" }),
+          col("picked_at", "DATETIME", "完成拣货时间", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_pick_tasks_no", ["pick_no"]),
+          key("idx_pick_wave", ["wave_id"]),
+          key("idx_pick_so", ["sales_order_id"]),
+          key("idx_pick_product", ["product_id"]),
+          key("idx_pick_warehouse_status", ["warehouse_id", "status"])
+        ],
+        fks: [
+          fk("fk_pick_wave", ["wave_id"], "wave", ["id"]),
+          fk("fk_pick_so", ["sales_order_id"], "sales_orders", ["id"]),
+          fk("fk_pick_product", ["product_id"], "products", ["id"]),
+          fk("fk_pick_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "check_records",
+        group: "WMS 出库管理",
+        comment: "复核记录 CHECK，校验拣货数量",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("check_no", "VARCHAR(32)", "复核单号"),
+          col("pick_task_id", "BIGINT UNSIGNED", "拣货任务ID"),
+          col("wave_id", "BIGINT UNSIGNED", "波次ID"),
+          col("package_box_no", "VARCHAR(64)", "发货箱号", { nullable: true }),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("expected_qty", "DECIMAL(14,3)", "应复核数量", { default: "0.000" }),
+          col("checked_qty", "DECIMAL(14,3)", "已复核数量", { default: "0.000" }),
+          col("result", "ENUM('PASS','FAIL')", "复核结果", { default: "'PASS'" }),
+          col("status", "ENUM('PENDING','CHECKED','REWORK')", "复核状态", { default: "'PENDING'" }),
+          col("checked_user_name", "VARCHAR(60)", "复核员", { nullable: true }),
+          col("checked_at", "DATETIME", "复核完成时间", { nullable: true }),
+          col("exception_reason", "VARCHAR(255)", "异常原因", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_check_records_no", ["check_no"]),
+          key("idx_check_pick", ["pick_task_id"]),
+          key("idx_check_wave", ["wave_id"]),
+          key("idx_check_product", ["product_id"]),
+          key("idx_check_status", ["status", "result"])
+        ],
+        fks: [
+          fk("fk_check_pick", ["pick_task_id"], "pick_tasks", ["id"]),
+          fk("fk_check_wave", ["wave_id"], "wave", ["id"]),
+          fk("fk_check_product", ["product_id"], "products", ["id"])
+        ]
+      },
+      {
+        name: "packages",
+        group: "WMS 出库管理",
+        comment: "包裹 PKG，复核通过后称重贴面单",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("package_no", "VARCHAR(32)", "包裹号"),
+          col("check_record_id", "BIGINT UNSIGNED", "复核记录ID"),
+          col("shipment_id", "BIGINT UNSIGNED", "交运单ID", { nullable: true }),
+          col("sales_order_id", "BIGINT UNSIGNED", "销售订单ID", { nullable: true }),
+          col("warehouse_id", "BIGINT UNSIGNED", "仓库ID"),
+          col("carrier_name", "VARCHAR(80)", "承运商", { nullable: true }),
+          col("tracking_no", "VARCHAR(80)", "物流面单号", { nullable: true }),
+          col("weight_kg", "DECIMAL(10,3)", "包裹重量KG", { default: "0.000" }),
+          col("status", "ENUM('PACKED','SHIPPED','CANCELLED')", "包裹状态", { default: "'PACKED'" }),
+          col("packed_at", "DATETIME", "包装完成时间", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_packages_no", ["package_no"]),
+          key("idx_packages_check", ["check_record_id"]),
+          key("idx_packages_shipment", ["shipment_id"]),
+          key("idx_packages_so", ["sales_order_id"]),
+          key("idx_packages_tracking", ["tracking_no"])
+        ],
+        fks: [
+          fk("fk_pkg_check", ["check_record_id"], "check_records", ["id"]),
+          fk("fk_pkg_shipment", ["shipment_id"], "shipments", ["id"]),
+          fk("fk_pkg_so", ["sales_order_id"], "sales_orders", ["id"]),
+          fk("fk_pkg_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "shipments",
+        group: "WMS 出库管理",
+        comment: "交运单 DSH，包裹聚合后交接承运商",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("shipment_no", "VARCHAR(32)", "交运单号"),
+          col("warehouse_id", "BIGINT UNSIGNED", "发货仓库ID"),
+          col("carrier_name", "VARCHAR(80)", "承运商"),
+          col("route_name", "VARCHAR(80)", "线路", { nullable: true }),
+          col("package_count", "INT", "包裹数量", { default: "0" }),
+          col("total_weight_kg", "DECIMAL(12,3)", "总重量KG", { default: "0.000" }),
+          col("status", "ENUM('DRAFT','HANDOVERED','CANCELLED')", "交运状态", { default: "'DRAFT'" }),
+          col("handover_at", "DATETIME", "交运确认时间", { nullable: true }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_shipments_no", ["shipment_no"]),
+          key("idx_shipments_warehouse", ["warehouse_id"]),
+          key("idx_shipments_carrier", ["carrier_name", "route_name"]),
+          key("idx_shipments_status", ["status"])
+        ],
+        fks: [
+          fk("fk_shipments_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "inventory_flow",
+        group: "WMS 库存管理",
+        comment: "库存流水 FL，记录所有库存变动",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("flow_no", "VARCHAR(40)", "库存流水号"),
+          col("warehouse_id", "BIGINT UNSIGNED", "仓库ID"),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("location_code", "VARCHAR(64)", "货位编码", { nullable: true }),
+          col("batch_no", "VARCHAR(64)", "批次号", { nullable: true }),
+          col("source_system", "ENUM('ERP','WMS')", "来源系统", { default: "'WMS'" }),
+          col("source_type", "ENUM('PI','SOO','PRO','RCV','PICK','PKG','CK','TR','BL','ADJUST')", "来源单据类型"),
+          col("source_id", "BIGINT UNSIGNED", "来源单据ID", { nullable: true }),
+          col("source_no", "VARCHAR(40)", "来源单号", { nullable: true }),
+          col("direction", "ENUM('IN','OUT','OCCUPY','RELEASE','FREEZE','UNFREEZE','TRANSFER')", "库存变动方向"),
+          col("change_qty", "DECIMAL(14,3)", "变动数量，出库为负数", { default: "0.000" }),
+          col("after_on_hand_qty", "DECIMAL(14,3)", "变动后现存", { default: "0.000" }),
+          col("after_available_qty", "DECIMAL(14,3)", "变动后可用", { default: "0.000" }),
+          col("occurred_at", "DATETIME", "发生时间", { default: "CURRENT_TIMESTAMP" }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt()
+        ],
+        indexes: [
+          uk("uk_inventory_flow_no", ["flow_no"]),
+          key("idx_flow_product_warehouse_time", ["product_id", "warehouse_id", "occurred_at"]),
+          key("idx_flow_source", ["source_type", "source_id"]),
+          key("idx_flow_source_no", ["source_no"])
+        ],
+        fks: [
+          fk("fk_flow_product", ["product_id"], "products", ["id"]),
+          fk("fk_flow_warehouse", ["warehouse_id"], "warehouses", ["id"])
+        ]
+      },
+      {
+        name: "inventory_check",
+        group: "WMS 盘点管理",
+        comment: "盘点单 CK，记录盘点范围、差异与调整结果",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("check_no", "VARCHAR(32)", "盘点单号"),
+          col("warehouse_id", "BIGINT UNSIGNED", "盘点仓库ID"),
+          col("location_code", "VARCHAR(64)", "盘点货位编码", { nullable: true }),
+          col("product_id", "BIGINT UNSIGNED", "商品ID", { nullable: true }),
+          col("check_type", "ENUM('VISIBLE','BLIND','DYNAMIC','FULL')", "盘点类型", { default: "'VISIBLE'" }),
+          col("system_qty", "DECIMAL(14,3)", "系统数量", { default: "0.000" }),
+          col("actual_qty", "DECIMAL(14,3)", "实盘数量", { default: "0.000" }),
+          col("diff_qty", "DECIMAL(14,3)", "盈亏数量", { default: "0.000" }),
+          col("diff_rate", "DECIMAL(7,4)", "差异率", { default: "0.0000" }),
+          col("status", "ENUM('DRAFT','COUNTING','REVIEWING','CONFIRMED','VOIDED')", "盘点状态", { default: "'DRAFT'" }),
+          col("supervisor_name", "VARCHAR(60)", "审核主管", { nullable: true }),
+          col("confirmed_at", "DATETIME", "确认调整时间", { nullable: true }),
+          col("remark", "VARCHAR(255)", "备注", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_inventory_check_no", ["check_no"]),
+          key("idx_inventory_check_warehouse", ["warehouse_id"]),
+          key("idx_inventory_check_product", ["product_id"]),
+          key("idx_inventory_check_status", ["status"]),
+          key("idx_inventory_check_location", ["location_code"])
+        ],
+        fks: [
+          fk("fk_inv_check_warehouse", ["warehouse_id"], "warehouses", ["id"]),
+          fk("fk_inv_check_product", ["product_id"], "products", ["id"])
+        ]
+      },
+      {
+        name: "transfers",
+        group: "WMS 调拨管理",
+        comment: "调拨单 TR，记录调出、在途、调入与差异",
+        columns: [
+          col("id", "BIGINT UNSIGNED", "主键ID", { primary: true, auto: true }),
+          col("transfer_no", "VARCHAR(32)", "调拨单号"),
+          col("source_system", "ENUM('ERP','WMS')", "创建来源", { default: "'WMS'" }),
+          col("from_warehouse_id", "BIGINT UNSIGNED", "调出仓库ID"),
+          col("to_warehouse_id", "BIGINT UNSIGNED", "调入仓库ID"),
+          col("product_id", "BIGINT UNSIGNED", "商品ID"),
+          col("transfer_qty", "DECIMAL(14,3)", "申请调拨数量", { default: "0.000" }),
+          col("outbound_qty", "DECIMAL(14,3)", "调出数量", { default: "0.000" }),
+          col("received_qty", "DECIMAL(14,3)", "调入实收数量", { default: "0.000" }),
+          col("loss_qty", "DECIMAL(14,3)", "在途损耗数量", { default: "0.000" }),
+          col("status", "ENUM('DRAFT','OUTBOUND','IN_TRANSIT','COMPLETED','CANCELLED')", "调拨状态", { default: "'DRAFT'" }),
+          col("outbound_at", "DATETIME", "确认调出时间", { nullable: true }),
+          col("inbound_at", "DATETIME", "确认调入时间", { nullable: true }),
+          col("loss_reason", "VARCHAR(255)", "损耗原因", { nullable: true }),
+          createdAt(),
+          updatedAt()
+        ],
+        indexes: [
+          uk("uk_transfers_no", ["transfer_no"]),
+          key("idx_transfers_from", ["from_warehouse_id"]),
+          key("idx_transfers_to", ["to_warehouse_id"]),
+          key("idx_transfers_product", ["product_id"]),
+          key("idx_transfers_status", ["status"])
+        ],
+        fks: [
+          fk("fk_transfers_from_wh", ["from_warehouse_id"], "warehouses", ["id"]),
+          fk("fk_transfers_to_wh", ["to_warehouse_id"], "warehouses", ["id"]),
+          fk("fk_transfers_product", ["product_id"], "products", ["id"])
+        ]
+      }
+    ];
+
+    const relationships = [
+      ["suppliers", "||--o{", "purchase_orders", "PO->supplier(N:1)"],
+      ["warehouses", "||--o{", "purchase_orders", "PO->warehouse(N:1)"],
+      ["purchase_orders", "||--o{", "purchase_order_items", "PO->POI(1:N)"],
+      ["products", "||--o{", "purchase_order_items", "product->POI(1:N)"],
+      ["purchase_orders", "||--o{", "stock_in", "PO->PI(1:N)"],
+      ["stock_in", "||--o{", "stock_in_items", "PI->PII(1:N)"],
+      ["purchase_order_items", "||--o{", "stock_in_items", "POI->PII(1:N)"],
+      ["stock_in", "||--o{", "purchase_returns", "PI->PR(1:N)"],
+      ["purchase_returns", "||--o{", "purchase_return_items", "PR->PRI(1:N)"],
+      ["purchase_return_items", "||--o{", "return_outbound_items", "PRI->PROI(1:N)"],
+      ["purchase_returns", "||--o{", "return_outbounds", "PR->PRO(1:N)"],
+      ["return_outbounds", "||--o{", "return_outbound_items", "PRO->PROI(1:N)"],
+      ["customers", "||--o{", "sales_orders", "SO->customer(N:1)"],
+      ["warehouses", "||--o{", "sales_orders", "SO->warehouse(N:1)"],
+      ["sales_orders", "||--o{", "sales_order_items", "SO->SOI(1:N)"],
+      ["products", "||--o{", "sales_order_items", "product->SOI(1:N)"],
+      ["sales_orders", "||--o{", "sales_outbounds", "SO->SOO(1:N)"],
+      ["sales_outbounds", "||--o{", "sales_outbound_items", "SOO->SOOI(1:N)"],
+      ["sales_order_items", "||--o{", "sales_outbound_items", "SOI->SOOI(1:N)"],
+      ["purchase_orders", "||--o{", "inbound_rcv", "PO->RCV(1:N)"],
+      ["inbound_rcv", "||--o{", "inbound_rcv_items", "RCV->RCVI(1:N)"],
+      ["purchase_order_items", "||--o{", "inbound_rcv_items", "POI->RCVI(1:N)"],
+      ["sales_orders", "||--o{", "wave", "WAVE->SO(N:1)"],
+      ["wave", "||--o{", "pick_tasks", "WAVE->PICK(1:N)"],
+      ["pick_tasks", "||--o{", "check_records", "PICK->CHECK(1:N)"],
+      ["check_records", "||--o{", "packages", "CHECK->PKG(1:N)"],
+      ["shipments", "||--o{", "packages", "DSH->PKG(1:N)"],
+      ["sales_orders", "||--o{", "packages", "PKG->SO(N:1)"],
+      ["warehouses", "||--o{", "inventory_flow", "FL->warehouse(N:1)"],
+      ["products", "||--o{", "inventory_flow", "FL->product(N:1)"],
+      ["warehouses", "||--o{", "inventory_check", "CK->warehouse(N:1)"],
+      ["products", "||--o{", "inventory_check", "CK->product(N:1)"],
+      ["warehouses", "||--o{", "transfers", "TR.from->warehouse(N:1)"],
+      ["warehouses", "||--o{", "transfers", "TR.to->warehouse(N:1)"],
+      ["products", "||--o{", "transfers", "TR->product(N:1)"],
+      ["inventory_check", "||--o{", "inventory_flow", "CK->FL(1:N)"],
+      ["transfers", "||--o{", "inventory_flow", "TR->FL(1:N)"]
+    ];
+
+    const tableOrder = [
+      "suppliers",
+      "customers",
+      "products",
+      "warehouses",
+      "purchase_orders",
+      "purchase_order_items",
+      "stock_in",
+      "stock_in_items",
+      "purchase_returns",
+      "purchase_return_items",
+      "return_outbounds",
+      "return_outbound_items",
+      "sales_orders",
+      "sales_order_items",
+      "sales_outbounds",
+      "sales_outbound_items",
+      "inbound_rcv",
+      "inbound_rcv_items",
+      "wave",
+      "pick_tasks",
+      "check_records",
+      "shipments",
+      "packages",
+      "inventory_check",
+      "transfers",
+      "inventory_flow"
+    ];
+
+    const orderedTables = tableOrder.map((name) => tables.find((table) => table.name === name));
+
+    function col(name, type, comment, opts = {}) {
+      return {
+        name,
+        type,
+        comment,
+        nullable: opts.nullable === undefined ? false : opts.nullable,
+        default: opts.default,
+        primary: Boolean(opts.primary),
+        auto: Boolean(opts.auto),
+        extra: opts.extra || ""
+      };
+    }
+
+    function createdAt() {
+      return col("created_at", "DATETIME", "创建时间", { default: "CURRENT_TIMESTAMP" });
+    }
+
+    function updatedAt() {
+      return col("updated_at", "DATETIME", "更新时间", { default: "CURRENT_TIMESTAMP", extra: "ON UPDATE CURRENT_TIMESTAMP" });
+    }
+
+    function uk(name, columns) {
+      return { type: "UNIQUE KEY", name, columns };
+    }
+
+    function key(name, columns) {
+      return { type: "KEY", name, columns };
+    }
+
+    function fk(name, columns, refTable, refColumns) {
+      return { name, columns, refTable, refColumns };
+    }
+
+    function quoteId(value) {
+      return "`" + value + "`";
+    }
+
+    function escapeSql(value) {
+      return String(value).replace(/'/g, "''");
+    }
+
+    function columnDDL(column) {
+      const pieces = [
+        quoteId(column.name),
+        column.type,
+        column.nullable ? "NULL" : "NOT NULL"
+      ];
+      if (column.auto) {
+        pieces.push("AUTO_INCREMENT");
+      }
+      if (!column.auto && column.default !== undefined) {
+        pieces.push("DEFAULT " + column.default);
+      } else if (!column.auto && column.nullable) {
+        pieces.push("DEFAULT NULL");
+      }
+      if (column.extra) {
+        pieces.push(column.extra);
+      }
+      if (column.primary) {
+        pieces.push("PRIMARY KEY");
+      }
+      pieces.push("COMMENT '" + escapeSql(column.comment) + "'");
+      return "  " + pieces.join(" ");
+    }
+
+    function indexDDL(index) {
+      return "  " + index.type + " " + quoteId(index.name) + " (" + index.columns.map(quoteId).join(", ") + ")";
+    }
+
+    function fkDDL(foreignKey) {
+      return "  CONSTRAINT " + quoteId(foreignKey.name) +
+        " FOREIGN KEY (" + foreignKey.columns.map(quoteId).join(", ") + ")" +
+        " REFERENCES " + quoteId(foreignKey.refTable) +
+        " (" + foreignKey.refColumns.map(quoteId).join(", ") + ")";
+    }
+
+    function createDDL(table) {
+      const lines = [
+        ...table.columns.map(columnDDL),
+        ...(table.indexes || []).map(indexDDL),
+        ...(table.fks || []).map(fkDDL)
+      ];
+      return "CREATE TABLE " + quoteId(table.name) + " (\n" +
+        lines.join(",\n") +
+        "\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='" +
+        escapeSql(table.comment) + "';";
+    }
+
+    function mysqlTypeToMermaid(type) {
+      if (type.startsWith("BIGINT")) return "BIGINT";
+      if (type.startsWith("VARCHAR")) return "VARCHAR";
+      if (type.startsWith("DECIMAL")) return "DECIMAL";
+      if (type.startsWith("ENUM")) return "ENUM";
+      if (type.startsWith("DATETIME")) return "DATETIME";
+      if (type.startsWith("DATE")) return "DATE";
+      if (type.startsWith("INT")) return "INT";
+      if (type.startsWith("TINYINT")) return "TINYINT";
+      if (type.startsWith("JSON")) return "JSON";
+      return type.replace(/\(.*/, "");
+    }
+
+    function isCoreField(column) {
+      return column.primary ||
+        column.name.endsWith("_id") ||
+        column.name.endsWith("_no") ||
+        column.name.endsWith("_code") ||
+        column.name === "status" ||
+        column.name === "direction" ||
+        column.name === "source_type";
+    }
+
+    function fieldMarker(column) {
+      if (column.primary) return "PK";
+      if (column.name.endsWith("_id")) return "FK";
+      if (column.name.endsWith("_no") || column.name.endsWith("_code")) return "UK";
+      return "";
+    }
+
+    function erDiagramSource() {
+      const entityBlocks = orderedTables.map((table) => {
+        const fields = table.columns
+          .filter(isCoreField)
+          .slice(0, 9)
+          .map((column) => {
+            const marker = fieldMarker(column);
+            return "    " + mysqlTypeToMermaid(column.type) + " " + column.name + (marker ? " " + marker : "");
+          });
+        return "  " + table.name + " {\n" + fields.join("\n") + "\n  }";
+      });
+      const relationLines = relationships.map(([from, rel, to, label]) => "  " + from + " " + rel + " " + to + " : \"" + label + "\"");
+      return "erDiagram\n" + relationLines.join("\n") + "\n\n" + entityBlocks.join("\n\n");
+    }
+
+    const erSource = erDiagramSource();
+    document.getElementById("er-source").textContent = erSource;
+    document.getElementById("er-raw").textContent = erSource;
+
+    const ddlGrid = document.getElementById("ddl-grid");
+    const count = document.getElementById("table-count");
+    const filter = document.getElementById("table-filter");
+
+    function renderDDL(query = "") {
+      const normalized = query.trim().toLowerCase();
+      const visible = orderedTables.filter((table) =>
+        !normalized ||
+        table.name.toLowerCase().includes(normalized) ||
+        table.comment.toLowerCase().includes(normalized) ||
+        table.group.toLowerCase().includes(normalized)
+      );
+      ddlGrid.innerHTML = visible.map((table) => {
+        return `<article class="panel ddl-card" data-table="${table.name}">
+          <header>
+            <h3>${table.name}</h3>
+            <p>${table.group} / ${table.comment}</p>
+          </header>
+          <pre><code>${escapeHtml(createDDL(table))}</code></pre>
+        </article>`;
+      }).join("");
+      count.textContent = `当前显示 ${visible.length} / ${orderedTables.length} 张表`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    filter.addEventListener("input", (event) => renderDDL(event.target.value));
+    renderDDL();
+
+    try {
+      const { default: mermaid } = await import("https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs");
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "dark",
+        securityLevel: "loose",
+        er: { useMaxWidth: false }
+      });
+      await mermaid.run({ nodes: [document.getElementById("er-source")] });
+    } catch (error) {
+      document.getElementById("mermaid-fallback").style.display = "block";
+      console.error("Mermaid render failed", error);
+    }
+  </script>
+</body>
+</html>

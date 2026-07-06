@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>强盛科技进销存 API</title>
+  <!-- Swagger UI default styles -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css" />
+  <!-- Swagger dark theme override -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-themes@1.4.3/themes/dark.min.css" />
+  
+  <style>
+    /* Reset & Dark Mode optimization */
+    html {
+      box-sizing: border-box;
+      overflow-y: scroll;
+    }
+    *, *:before, *:after {
+      box-sizing: inherit;
+    }
+    body {
+      margin: 0;
+      background: #1b1b1b;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    
+    /* Custom CSS Overrides for a Premium Sleek Look */
+    .swagger-ui {
+      background-color: #1b1b1b;
+    }
+    
+    /* Topbar customization */
+    .swagger-ui .topbar {
+      background-color: #121212 !important;
+      border-bottom: 2px solid #00f0ff;
+      padding: 12px 0;
+    }
+    .swagger-ui .topbar a {
+      max-width: 300px;
+      text-decoration: none;
+      color: #ffffff;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    
+    /* Customizing try it out buttons & tags */
+    .swagger-ui .info .title {
+      color: #00f0ff !important;
+      font-family: inherit;
+    }
+    .swagger-ui .info p, 
+    .swagger-ui .info li, 
+    .swagger-ui .info code {
+      color: #e0e0e0 !important;
+    }
+    
+    .swagger-ui .scheme-container {
+      background: #242424 !important;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      border: 1px solid #333;
+    }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+
+  <!-- Swagger UI Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js" charset="UTF-8"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
+  
+  <script>
+    window.onload = function() {
+      // Initialize Swagger UI
+      const ui = SwaggerUIBundle({
+        url: "api-spec.yaml",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "BaseLayout",
+        // Enable try it out by default
+        tryItOutEnabled: true,
+        // Default models expansion
+        defaultModelsExpandDepth: 1,
+        defaultModelExpandDepth: 1
+      });
+      window.ui = ui;
+    };
+  </script>
+</body>
+</html>
