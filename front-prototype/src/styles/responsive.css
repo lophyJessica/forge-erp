@@ -1,0 +1,212 @@
+@media (min-width: 768px) and (max-width: 1024px) {
+  html {
+    font-size: 15px;
+  }
+
+  .app-sidebar {
+    width: 14.5rem;
+  }
+
+  .app-sidebar-nav {
+    padding: 1rem;
+    gap: 1.25rem;
+  }
+
+  .app-topbar {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .app-content {
+    padding: 1rem;
+  }
+
+  .app-content .gap-6 {
+    gap: 1rem;
+  }
+
+  .app-content .p-6 {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-shell {
+    display: block;
+    min-height: 100vh;
+    padding-top: 4rem;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 40;
+    width: 100%;
+    height: auto;
+    max-height: 4rem;
+    overflow: hidden;
+    border-right: 0;
+    border-bottom: 1px solid rgb(30 41 59);
+    transition: max-height 180ms ease;
+  }
+
+  .app-sidebar.is-open {
+    max-height: 86vh;
+    box-shadow: 0 18px 45px rgb(15 23 42 / 0.24);
+  }
+
+  .app-sidebar-brand {
+    min-height: 4rem;
+    padding-left: 1rem;
+    padding-right: 0.75rem;
+  }
+
+  .app-mobile-menu-button {
+    margin-left: auto;
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    color: white;
+    background: rgb(30 41 59);
+  }
+
+  .app-sidebar-nav {
+    max-height: calc(86vh - 8rem);
+    padding: 0.875rem 0.75rem 1rem;
+  }
+
+  .app-sidebar-user {
+    padding: 0.875rem 1rem;
+  }
+
+  .app-main-panel {
+    min-width: 0;
+  }
+
+  .app-topbar {
+    min-height: 3.5rem;
+    height: auto;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.75rem 1rem;
+  }
+
+  .app-topbar > div:first-child {
+    min-width: 0;
+    flex-wrap: wrap;
+    row-gap: 0.25rem;
+  }
+
+  .app-topbar > div:last-child {
+    flex-shrink: 0;
+    gap: 0.5rem;
+  }
+
+  .app-topbar > div:last-child > div:last-child {
+    display: none;
+  }
+
+  .app-content {
+    padding: 0.875rem;
+    overflow-x: hidden;
+  }
+
+  .app-content > .space-y-6,
+  .app-content > .space-y-5,
+  .app-content > .space-y-4 {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-content .bg-white {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0.5rem;
+  }
+
+  .app-content .grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .app-content form.grid,
+  .app-content .bg-white > .grid:first-child,
+  .app-content .border-b + .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .app-content form.grid > button,
+  .app-content form.grid > .col-span-full,
+  .app-content form.grid > [class*="col-span"],
+  .app-content .bg-white > .grid:first-child > .col-span-full,
+  .app-content .bg-white > .grid:first-child > [class*="col-span"] {
+    grid-column: 1 / -1;
+  }
+
+  .app-content .flex.justify-between,
+  .app-content .flex.items-center.justify-between {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .app-content button,
+  .app-content a[role="button"] {
+    min-height: 2.25rem;
+    white-space: normal;
+  }
+
+  .app-content form button,
+  .app-content .bg-white > .flex button,
+  .app-content .bg-white > .flex a {
+    width: 100%;
+  }
+
+  .app-content .bg-white > .flex,
+  .app-content form .flex,
+  .app-content .pt-4.flex,
+  .app-content .border-t.flex {
+    flex-wrap: wrap;
+  }
+
+  .app-content .bg-white > .flex > button,
+  .app-content .bg-white > .flex > a,
+  .app-content form .flex > button,
+  .app-content form .flex > a,
+  .app-content .pt-4.flex > button,
+  .app-content .pt-4.flex > a,
+  .app-content .border-t.flex > button,
+  .app-content .border-t.flex > a {
+    flex: 1 1 100%;
+  }
+
+  .app-content table {
+    min-width: 48rem;
+  }
+
+  .app-content table th,
+  .app-content table td {
+    white-space: nowrap;
+  }
+
+  .app-content table,
+  .app-content table + *,
+  .app-content .overflow-x-auto {
+    max-width: 100%;
+  }
+
+  .app-content .bg-white:has(table),
+  .app-content form:has(table),
+  .app-content div:has(> table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-mobile-menu-button {
+    display: none;
+  }
+}

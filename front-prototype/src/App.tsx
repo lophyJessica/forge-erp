@@ -67,6 +67,7 @@ import React from 'react';
 // B 端后台布局组件
 function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   // 判断左侧菜单激活态
   const isMenuChecked = (path: string) => {
@@ -74,11 +75,11 @@ function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50/50 text-slate-800 font-sans">
+    <div className="app-shell flex min-h-screen bg-slate-50/50 text-slate-800 font-sans">
       {/* 侧边栏 */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0">
+      <aside className={`app-sidebar w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 ${isMobileMenuOpen ? 'is-open' : ''}`}>
         {/* 系统 LOGO 区域 */}
-        <div className="h-16 flex items-center gap-2.5 px-6 border-b border-slate-800 bg-slate-950">
+        <div className="app-sidebar-brand h-16 flex items-center gap-2.5 px-6 border-b border-slate-800 bg-slate-950">
           <div className="bg-primary p-1.5 rounded-lg text-white">
             <Layers size={20} />
           </div>
@@ -86,10 +87,19 @@ function Layout({ children }: { children: React.ReactNode }) {
             <h2 className="font-bold text-white text-sm tracking-wide">强盛科技Forge</h2>
             <p className="text-[10px] text-slate-500">Q强盛ERP控制台 v1.1</p>
           </div>
+          <button
+            type="button"
+            className="app-mobile-menu-button"
+            aria-label={isMobileMenuOpen ? '收起导航菜单' : '展开导航菜单'}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen(prev => !prev)}
+          >
+            <Menu size={20} />
+          </button>
         </div>
 
         {/* 菜单导航 */}
-        <nav className="flex-1 px-4 py-6 space-y-7 overflow-y-auto">
+        <nav className="app-sidebar-nav flex-1 px-4 py-6 space-y-7 overflow-y-auto" onClick={() => setIsMobileMenuOpen(false)}>
           <div>
             <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">主工作台</span>
             <ul className="space-y-1 text-xs">
@@ -559,7 +569,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* 底部用户信息 */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950 flex items-center gap-3 text-xs">
+        <div className="app-sidebar-user p-4 border-t border-slate-800 bg-slate-950 flex items-center gap-3 text-xs">
           <div className="bg-slate-800 p-2 rounded-full text-slate-300">
             <User size={16} />
           </div>
@@ -571,9 +581,9 @@ function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* 主面板 */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="app-main-panel flex-1 flex flex-col min-w-0">
         {/* 页头 */}
-        <header className="h-16 bg-white border-b border-slate-200/80 flex justify-between items-center px-8 shadow-sm">
+        <header className="app-topbar h-16 bg-white border-b border-slate-200/80 flex justify-between items-center px-8 shadow-sm">
           {/* 面包屑 */}
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
             <span>
@@ -671,7 +681,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* 内容页面容器 */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="app-content flex-1 p-6 overflow-y-auto">
           {children}
         </main>
       </div>
