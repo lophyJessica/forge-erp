@@ -125,7 +125,7 @@
 | 确认按钮 | `发起退货` |
 | 行选择 | 单选 |
 
-确认后跳转至 `/purchase/returns/new?sourcePiId={piId}`，并预填 PR 新增页。
+确认后跳转至 `/purchase/returns/new?source_id={pi_id}`，并预填 PR 新增页。
 
 ---
 
