@@ -57,10 +57,11 @@ import AuditLog from './pages/AuditLog';
 import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
 import NotificationCenter from './pages/NotificationCenter';
+import ManualPage from './pages/ManualPage';
 import NotificationBell from './components/NotificationBell';
 import { 
   ClipboardList, ShoppingCart, BarChart3, Users, Settings, 
-  Layers, Package, Menu, User, Home, ReceiptText, CreditCard, FileClock, FileText, BadgePercent
+  Layers, Package, Menu, User, Home, ReceiptText, CreditCard, FileClock, FileText, BadgePercent, BookOpen
 } from 'lucide-react';
 import React from 'react';
 
@@ -115,6 +116,21 @@ function Layout({ children }: { children: React.ReactNode }) {
                   <div className="flex items-center gap-3">
                     <Home size={16} />
                     <span>控制台首页</span>
+                  </div>
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/manual" 
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
+                    isMenuChecked('/manual')
+                      ? 'bg-primary text-white font-bold' 
+                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <BookOpen size={16} />
+                    <span>操作手册</span>
                   </div>
                 </Link>
               </li>
@@ -601,6 +617,8 @@ function Layout({ children }: { children: React.ReactNode }) {
                 ? '经营分析'
                 : location.pathname.startsWith('/notifications')
                 ? '消息中心'
+                : location.pathname.startsWith('/manual')
+                ? '操作手册'
                 : location.pathname.startsWith('/contracts')
                 ? '合同管理'
                 : location.pathname.startsWith('/base') 
@@ -629,6 +647,8 @@ function Layout({ children }: { children: React.ReactNode }) {
                 ? '报表中心'
                 : location.pathname.startsWith('/notifications')
                 ? '消息中心'
+                : location.pathname.startsWith('/manual')
+                ? '操作手册'
                 : location.pathname.startsWith('/contracts')
                 ? '合同管理'
                 : location.pathname.startsWith('/purchase/receipts') 
@@ -773,6 +793,15 @@ export default function App() {
           element={
             <RouteWrapper>
               <NotificationCenter />
+            </RouteWrapper>
+          } 
+        />
+
+        <Route 
+          path="/manual" 
+          element={
+            <RouteWrapper>
+              <ManualPage />
             </RouteWrapper>
           } 
         />
