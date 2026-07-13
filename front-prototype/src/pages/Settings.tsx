@@ -54,7 +54,7 @@ export default function Settings() {
             </div>
             <div className="flex justify-between items-center py-1">
               <span className="font-semibold text-slate-400">原型版本</span>
-              <span className="font-mono font-bold text-emerald-600">v1.1.0-Prototype</span>
+              <span className="font-mono font-bold text-emerald-600">v1.2.0-Prototype</span>
             </div>
             <div className="flex justify-between items-center py-1">
               <span className="font-semibold text-slate-400">技术选型</span>

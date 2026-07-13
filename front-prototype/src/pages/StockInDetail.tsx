@@ -66,7 +66,7 @@ export default function StockInDetail() {
     try {
       if (actionType === 'DELETE') {
         stockInApi.deleteStockIn(stockIn.id);
-        alert('入库单已物理删除');
+        alert('采购入库单已删除');
         navigate('/purchase/receipts');
       } else if (actionType === 'VOID') {
         stockInApi.voidStockIn(stockIn.id);
@@ -197,13 +197,13 @@ export default function StockInDetail() {
                 size="sm" 
                 onClick={() => setConfirmAction({
                   type: 'DELETE',
-                  title: '删除入库单',
-                  msg: '删除后不可恢复，确认删除该草稿入库单？'
+                  title: '确认删除',
+                  msg: '删除后不可恢复，该草稿入库单将从系统中永久移除，确认删除？'
                 })} 
                 className="h-8 py-1 flex items-center gap-1 text-slate-400 hover:text-slate-600 border-slate-200 font-bold"
               >
                 <Trash2 size={13} />
-                物理删除
+                删除
               </Button>
             </>
           )}

@@ -206,7 +206,7 @@ export default function PurchaseOrderList() {
       switch (actionType) {
         case 'DELETE':
           purchaseOrderApi.deleteOrder(orderId);
-          alert('单据物理删除成功');
+          alert('采购订单已删除');
           break;
         case 'SUBMIT':
           purchaseOrderApi.submitOrder(orderId);
@@ -648,13 +648,6 @@ export default function PurchaseOrderList() {
                         {order.status === 'PENDING_STOCK_IN' && (
                           <>
                             <button
-                              onClick={() => handleDispatchWms(order.id)}
-                              className="inline-flex items-center gap-0.5 p-1 text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer font-medium"
-                              title="下发WMS"
-                            >
-                              <span>下发WMS</span>
-                            </button>
-                            <button
                               onClick={() => navigate(`/purchase/orders/${order.id}`, { state: { openStockIn: true } })}
                               className="inline-flex items-center gap-0.5 p-1 text-blue-600 hover:text-blue-800 transition-colors cursor-pointer font-medium"
                               title="创建入库单"
@@ -674,13 +667,6 @@ export default function PurchaseOrderList() {
 
                         {order.status === 'PARTIAL_STOCK_IN' && (
                           <>
-                            <button
-                              onClick={() => handleDispatchWms(order.id)}
-                              className="inline-flex items-center gap-0.5 p-1 text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer font-medium"
-                              title="下发WMS"
-                            >
-                              <span>下发WMS</span>
-                            </button>
                             <button
                               onClick={() => navigate(`/purchase/orders/${order.id}`, { state: { openStockIn: true } })}
                               className="inline-flex items-center gap-0.5 p-1 text-blue-600 hover:text-blue-800 transition-colors cursor-pointer font-medium"

@@ -57,7 +57,7 @@ export default function PurchaseReturnDetail() {
         alert('退货单已成功作废');
       } else if (type === 'DELETE') {
         purchaseReturnApi.deleteReturn(pr.id);
-        alert('草稿退货单已成功物理删除');
+        alert('采购退货单已删除');
         navigate('/purchase/returns');
         return;
       }
@@ -143,13 +143,13 @@ export default function PurchaseReturnDetail() {
                 size="sm" 
                 onClick={() => setConfirmAction({
                   type: 'DELETE',
-                  title: '物理删除退货单',
-                  msg: '删除后数据将彻底消失且不可找回。确认物理删除此草稿单？'
+                  title: '确认删除',
+                  msg: '删除后不可恢复，该草稿退货单将从系统中永久移除，确认删除？'
                 })} 
                 className="h-8 py-1 flex items-center gap-1 text-slate-400 hover:text-slate-600 border-slate-200 font-bold"
               >
                 <Trash2 size={13} />
-                物理删除
+                删除
               </Button>
             </>
           )}

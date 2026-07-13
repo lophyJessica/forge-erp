@@ -130,22 +130,22 @@ export default function StockInList() {
     if (type === 'DELETE') {
       setConfirmAction({
         type: 'DELETE',
-        title: '删除草稿',
-        msg: '删除后不可恢复，确认删除该草稿入库单？',
+        title: '确认删除',
+        msg: '删除后不可恢复，该草稿入库单将从系统中永久移除，确认删除？',
         targetId: id
       });
     } else if (type === 'VOID') {
       setConfirmAction({
         type: 'VOID',
-        title: '作废单据',
-        msg: '作废后该入库单将永久失效，确认作废？',
+        title: '确认作废',
+        msg: '作废后不可恢复，单据将进入已作废状态，确认作废？',
         targetId: id
       });
     } else if (type === 'CONFIRM') {
       setConfirmAction({
         type: 'CONFIRM',
         title: '确认入库',
-        msg: '确认入库后实物将正式计入库存并形成应付，确认继续？',
+        msg: '确认后实物将正式计入库存并形成财务应付，确认入库？',
         targetId: id
       });
     }
@@ -158,7 +158,7 @@ export default function StockInList() {
     try {
       if (type === 'DELETE') {
         stockInApi.deleteStockIn(targetId);
-        alert('草稿删除成功');
+        alert('采购入库单已删除');
       } else if (type === 'VOID') {
         stockInApi.voidStockIn(targetId);
         alert('单据已作废');
@@ -539,17 +539,8 @@ export default function StockInList() {
                           </>
                         )}
 
-                        {/* 已确认：模拟创建退货单 */}
-                        {rec.status === 'CONFIRMED' && (
-                          <button
-                            onClick={() => alert(`已触发采购退货。将基于采购入库单 ${rec.id} 下推生成采购退货单(PR)。此功能为二期规划。`)}
-                            className="text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5 cursor-pointer font-bold"
-                            title="下推退货单"
-                          >
-                            <ArrowRightLeft size={13} />
-                            退货
-                          </button>
-                        )}
+                        {/* 已确认：无额外操作 */}
+                        {rec.status === 'CONFIRMED' && null}
                       </div>
                     </td>
                   </tr>

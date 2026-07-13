@@ -257,16 +257,14 @@ export default function InstantStockList() {
                         {rec.lastChangedAt}
                       </td>
 
-                      {/* 预警标识 (右固定)：低于安全库存显示黄色 Tag */}
+                      {/* 预警标识 (右固定)：低于安全库存显示黄色 Tag；否则为空不展示 */}
                       <td className="p-3 text-center sticky right-0 z-10 bg-white border-l border-slate-100 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                         {isBelowSafety ? (
                           <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                             ⚠️低于安全库存
                           </span>
                         ) : (
-                          <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                            正常
-                          </span>
+                          '-'
                         )}
                       </td>
                     </tr>

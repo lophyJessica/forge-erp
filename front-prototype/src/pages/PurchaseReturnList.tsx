@@ -91,7 +91,7 @@ export default function PurchaseReturnList() {
         alert('退货单已成功作废');
       } else if (type === 'DELETE') {
         purchaseReturnApi.deleteReturn(id);
-        alert('草稿已成功删除');
+        alert('采购退货单已删除');
       }
       loadData();
       setConfirmAction({ type: null, title: '', msg: '', targetId: null });
@@ -356,12 +356,12 @@ export default function PurchaseReturnList() {
                             <button
                               onClick={() => setConfirmAction({
                                 type: 'DELETE',
-                                title: '物理删除草稿',
-                                msg: '删除后无法恢复，确认删除该退货单草稿？',
+                                title: '确认删除',
+                                msg: '删除后不可恢复，该草稿退货单将从系统中永久移除，确认删除？',
                                 targetId: rec.id
                               })}
                               className="text-slate-400 hover:text-slate-600 flex items-center gap-0.5 cursor-pointer font-bold"
-                              title="物理删除"
+                              title="删除"
                             >
                               <Trash2 size={13} /> 删除
                             </button>

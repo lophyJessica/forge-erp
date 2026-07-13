@@ -226,6 +226,7 @@ export default function PurchaseReturnForm() {
                   setPrData({ ...prData, returnReason: e.target.value });
                   setErrors(prev => ({ ...prev, returnReason: '' }));
                 }}
+                maxLength={200}
                 placeholder="请详细描述退货原因，限 200 字（必填）"
                 className={`w-full rounded-md border ${
                   errors.returnReason ? 'border-rose-500 bg-rose-50/10' : 'border-input'

@@ -57,7 +57,7 @@ export default function PurchaseReturnOutboundDetail() {
         alert('该出库单已成功作废');
       } else if (type === 'DELETE') {
         purchaseReturnOutboundApi.deleteOutbound(pro.id);
-        alert('出库单草稿已物理删除');
+        alert('采购退货出库单已删除');
         navigate('/purchase/return-outbounds');
         return;
       }
@@ -143,13 +143,13 @@ export default function PurchaseReturnOutboundDetail() {
                 size="sm" 
                 onClick={() => setConfirmAction({
                   type: 'DELETE',
-                  title: '物理删除草稿',
-                  msg: '确认删除该退货出库单草稿？删除后不可恢复。'
+                  title: '确认删除',
+                  msg: '删除后不可恢复，该草稿退货出库单将从系统中永久移除，确认删除？'
                 })} 
                 className="h-8 py-1 flex items-center gap-1 text-slate-400 hover:text-slate-600 border-slate-200 font-bold"
               >
                 <Trash2 size={13} />
-                物理删除
+                删除
               </Button>
             </>
           )}
@@ -241,6 +241,8 @@ export default function PurchaseReturnOutboundDetail() {
                 <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 font-semibold">
                   <th className="p-3 w-36">商品编码</th>
                   <th className="p-3">商品名称</th>
+                  {/* P0 审计对齐：明细列补充"条码"字段（放在规格型号前），移除"应付号"列 */}
+                  <th className="p-3 w-32">条码</th>
                   <th className="p-3 w-32">规格型号</th>
                   <th className="p-3 w-16">单位</th>
                   <th className="p-3 text-right w-24">退货申请数</th>
@@ -255,7 +257,8 @@ export default function PurchaseReturnOutboundDetail() {
                   <tr key={it.id} className="hover:bg-slate-50/20">
                     <td className="p-3 font-semibold text-slate-500">{it.productCode}</td>
                     <td className="p-3 font-semibold text-slate-800">{it.productName}</td>
-                    <td className="p-3 text-slate-500">{it.productSpec}</td>
+                    <td className="p-3 text-slate-500">{it.productBarcode || '-'}</td>
+                    <td className="p-3 text-slate-500">{it.productSpec || '-'}</td>
                     <td className="p-3 text-slate-400">{it.unit}</td>
                     <td className="p-3 text-right font-bold text-slate-400">{it.returnQuantity}</td>
                     <td className="p-3 text-right font-extrabold text-primary">{it.outboundQuantity}</td>
@@ -335,7 +338,6 @@ export default function PurchaseReturnOutboundDetail() {
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 font-semibold">
-                      <th className="p-2">应付号</th>
                       <th className="p-2">供应商</th>
                       <th className="p-2 text-right w-28">冲减金额</th>
                       <th className="p-2 text-center w-24">结算状态</th>
@@ -345,7 +347,6 @@ export default function PurchaseReturnOutboundDetail() {
                     {payables.length > 0 ? (
                       payables.map(ap => (
                         <tr key={ap.id} className="hover:bg-slate-50/20">
-                          <td className="p-2 font-mono font-semibold text-slate-500">{ap.id}</td>
                           <td className="p-2 font-semibold">{ap.supplierName}</td>
                           <td className="p-2 text-right font-extrabold text-emerald-600">
                             ¥{ap.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
@@ -359,7 +360,7 @@ export default function PurchaseReturnOutboundDetail() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="p-4 text-center text-slate-400">
+                        <td colSpan={3} className="p-4 text-center text-slate-400">
                           暂无关联应付对账记录
                         </td>
                       </tr>

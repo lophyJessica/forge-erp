@@ -87,7 +87,7 @@ export default function PurchaseReturnOutboundList() {
         alert('退货出库单已作废');
       } else if (type === 'DELETE') {
         purchaseReturnOutboundApi.deleteOutbound(id);
-        alert('出库单草稿已物理删除');
+        alert('采购退货出库单已删除');
       }
       loadData();
       setConfirmAction({ type: null, title: '', msg: '', targetId: null });
@@ -328,15 +328,15 @@ export default function PurchaseReturnOutboundList() {
                             >
                               <XCircle size={13} /> 作废
                             </button>
-                            <button
-                              onClick={() => setConfirmAction({
-                                type: 'DELETE',
-                                title: '删除出库单草稿',
-                                msg: '物理删除后不可恢复。确认删除？',
-                                targetId: rec.id
-                              })}
-                              className="text-slate-400 hover:text-slate-600 flex items-center gap-0.5 cursor-pointer font-bold"
-                            >
+                             <button
+                               onClick={() => setConfirmAction({
+                                 type: 'DELETE',
+                                 title: '确认删除',
+                                 msg: '删除后不可恢复，该草稿退货出库单将从系统中永久移除，确认删除？',
+                                 targetId: rec.id
+                               })}
+                               className="text-slate-400 hover:text-slate-600 flex items-center gap-0.5 cursor-pointer font-bold"
+                             >
                               <Trash2 size={13} /> 删除
                             </button>
                           </>

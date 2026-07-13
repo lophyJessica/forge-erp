@@ -98,7 +98,7 @@ export default function PurchaseOrderDetail() {
       switch (actionType) {
         case 'DELETE':
           purchaseOrderApi.deleteOrder(order.id);
-          alert('单据物理删除成功');
+          alert('采购订单已删除');
           navigate('/purchase/orders');
           break;
         case 'SUBMIT':
@@ -288,8 +288,8 @@ export default function PurchaseOrderDetail() {
                 size="sm" 
                 onClick={() => setConfirmAction({ 
                   type: 'DELETE', 
-                  title: '确认物理删除订单', 
-                  msg: '草稿单据删除后将彻底在系统中抹除痕迹，不可找回！是否确认删除？' 
+                  title: '确认删除', 
+                  msg: '删除后不可恢复，该采购订单将从系统中永久移除，确认删除？' 
                 })} 
                 className="h-8 py-1 flex items-center gap-1"
               >
@@ -348,16 +348,6 @@ export default function PurchaseOrderDetail() {
           {order.status === 'PENDING_STOCK_IN' && (
             <>
               <Button 
-                variant="outline"
-                size="sm" 
-                onClick={handleDispatchWms}
-                className="h-8 py-1 flex items-center gap-1 text-emerald-600 hover:text-emerald-700 border-emerald-200"
-              >
-                <Send size={13} />
-                下发WMS
-              </Button>
-
-              <Button 
                 size="sm" 
                 onClick={() => navigate(`/purchase/receipts/new?source_id=${order.id}`)}
                 className="h-8 py-1 flex items-center gap-1"
@@ -384,16 +374,6 @@ export default function PurchaseOrderDetail() {
           {/* 部分入库状态操作 */}
           {order.status === 'PARTIAL_STOCK_IN' && (
             <>
-              <Button 
-                variant="outline"
-                size="sm" 
-                onClick={handleDispatchWms}
-                className="h-8 py-1 flex items-center gap-1 text-emerald-600 hover:text-emerald-700 border-emerald-200"
-              >
-                <Send size={13} />
-                下发WMS
-              </Button>
-
               <Button 
                 size="sm" 
                 onClick={() => navigate(`/purchase/receipts/new?source_id=${order.id}`)}

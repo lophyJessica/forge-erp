@@ -69,6 +69,51 @@ import React from 'react';
 function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const isCollapsed = false;
+  const [expandedGroups, setExpandedGroups] = React.useState<string[]>([]);
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev =>
+      prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
+  React.useEffect(() => {
+    let activeGroup = '';
+    const path = location.pathname;
+    if (path === '/') {
+      activeGroup = 'dashboard';
+    } else if (path.startsWith('/contracts')) {
+      activeGroup = 'contracts';
+    } else if (path.startsWith('/purchase')) {
+      activeGroup = 'purchase';
+    } else if (path.startsWith('/sales')) {
+      activeGroup = 'sales';
+    } else if (path.startsWith('/retail')) {
+      activeGroup = 'retail';
+    } else if (path.startsWith('/inventory')) {
+      activeGroup = 'inventory';
+    } else if (path.startsWith('/finance')) {
+      activeGroup = 'finance';
+    } else if (path.startsWith('/reports')) {
+      activeGroup = 'reports';
+    } else if (path.startsWith('/base')) {
+      activeGroup = 'base';
+    } else if (path.startsWith('/settings')) {
+      activeGroup = 'settings';
+    } else if (path.startsWith('/manual')) {
+      activeGroup = 'support';
+    }
+
+    if (activeGroup) {
+      setExpandedGroups(prev => {
+        if (prev.includes(activeGroup)) return prev;
+        return [...prev, activeGroup];
+      });
+    }
+  }, [location.pathname]);
 
   // 判断左侧菜单激活态
   const isMenuChecked = (path: string) => {
@@ -78,16 +123,25 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell flex min-h-screen bg-slate-50/50 text-slate-800 font-sans">
       {/* 侧边栏 */}
-      <aside className={`app-sidebar w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 ${isMobileMenuOpen ? 'is-open' : ''}`}>
+      <aside className={`app-sidebar bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 transition-all duration-300 ${
+        isCollapsed ? 'w-16' : 'w-64'
+      } ${isMobileMenuOpen ? 'is-open' : ''}`}>
         {/* 系统 LOGO 区域 */}
-        <div className="app-sidebar-brand h-16 flex items-center gap-2.5 px-6 border-b border-slate-800 bg-slate-950">
-          <div className="bg-primary p-1.5 rounded-lg text-white">
-            <Layers size={20} />
-          </div>
-          <div>
-            <h2 className="font-bold text-white text-sm tracking-wide">强盛科技Forge</h2>
-            <p className="text-[10px] text-slate-500">Q强盛ERP控制台 v1.1</p>
-          </div>
+        <div className={`app-sidebar-brand h-16 flex items-center border-b border-slate-800 bg-slate-950 transition-all duration-300 ${
+          isCollapsed ? 'justify-center' : 'justify-between px-4'
+        }`}>
+          {!isCollapsed && (
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="bg-primary p-1.5 rounded-lg text-white shrink-0">
+                <Layers size={20} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-bold text-white text-sm tracking-wide truncate">Forge ERP</h2>
+                <p className="text-[10px] text-slate-500 truncate">企业资源控制台 v1.2</p>
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             className="app-mobile-menu-button"
@@ -100,499 +154,749 @@ function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* 菜单导航 */}
-        <nav className="app-sidebar-nav flex-1 px-4 py-6 space-y-7 overflow-y-auto" onClick={() => setIsMobileMenuOpen(false)}>
+        <nav className={`app-sidebar-nav flex-1 py-6 space-y-5 overflow-y-auto transition-all duration-300 ${
+          isCollapsed ? 'px-2' : 'px-4'
+        }`} onClick={() => setIsMobileMenuOpen(false)}>
+          {/* 组1：主工作台 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">主工作台</span>
-            <ul className="space-y-1 text-xs">
-              <li>
-                <Link 
-                  to="/" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    location.pathname === '/'
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Home size={16} />
-                    <span>控制台首页</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/manual" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/manual')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <BookOpen size={16} />
-                    <span>操作手册</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('dashboard'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>主工作台</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('dashboard') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('dashboard')) && (
+              <ul className="space-y-1 text-[10px]">
+                <li>
+                  <Link 
+                    to="/" 
+                    title={isCollapsed ? "控制台首页" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      location.pathname === '/'
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <Home size={16} className="shrink-0" />
+                      {!isCollapsed && <span>控制台首页</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* 组2：合同管理 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">合同管理</span>
-            <ul className="space-y-1 text-xs font-medium">
-              <li>
-                <Link 
-                  to="/contracts" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/contracts')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText size={16} />
-                    <span>合同管理</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('contracts'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>合同管理</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('contracts') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('contracts')) && (
+              <ul className="space-y-1 text-[10px] font-medium">
+                <li>
+                  <Link 
+                    to="/contracts" 
+                    title={isCollapsed ? "合同管理" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/contracts')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <FileText size={16} className="shrink-0" />
+                      {!isCollapsed && <span>合同管理</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* 组3：采购业务管理 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">采购业务管理</span>
-            <ul className="space-y-1 text-xs font-medium">
-              <li>
-                <Link 
-                  to="/purchase/rfq" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/purchase/rfq')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText size={16} />
-                    <span>采购询比价</span>
-                  </div>
-                  <span className="inline-block px-1.5 py-0.2 text-[9px] bg-blue-500 text-white rounded font-bold">RFQ</span>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/purchase/orders" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/purchase/orders')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ClipboardList size={16} />
-                    <span>采购订单</span>
-                  </div>
-                  <span className="inline-block px-1.5 py-0.2 text-[9px] bg-emerald-500 text-white rounded font-bold">1.1版</span>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/purchase/receipts" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/purchase/receipts')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ShoppingCart size={16} />
-                    <span>采购入库单</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/purchase/returns" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/purchase/returns')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ShoppingCart size={16} />
-                    <span>采购退货单</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/purchase/return-outbounds" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/purchase/return-outbounds')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ShoppingCart size={16} />
-                    <span>采购退货出库单</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('purchase'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>采购业务管理</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('purchase') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('purchase')) && (
+              <ul className="space-y-1 text-[10px] font-medium">
+                <li>
+                  <Link 
+                    to="/purchase/rfq" 
+                    title={isCollapsed ? "采购询比价" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/purchase/rfq')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <FileText size={16} className="shrink-0" />
+                      {!isCollapsed && <span>采购询比价</span>}
+                    </div>
+                    {!isCollapsed && <span className="inline-block px-1.5 py-0.2 text-[9px] bg-blue-500 text-white rounded font-bold">RFQ</span>}
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/purchase/orders" 
+                    title={isCollapsed ? "采购订单" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/purchase/orders')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ClipboardList size={16} className="shrink-0" />
+                      {!isCollapsed && <span>采购订单</span>}
+                    </div>
+                    {!isCollapsed && <span className="inline-block px-1.5 py-0.2 text-[9px] bg-emerald-500 text-white rounded font-bold">1.1版</span>}
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/purchase/receipts" 
+                    title={isCollapsed ? "采购入库单" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/purchase/receipts')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ShoppingCart size={16} className="shrink-0" />
+                      {!isCollapsed && <span>采购入库单</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/purchase/returns" 
+                    title={isCollapsed ? "采购退货单" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/purchase/returns')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ShoppingCart size={16} className="shrink-0" />
+                      {!isCollapsed && <span>采购退货单</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/purchase/return-outbounds" 
+                    title={isCollapsed ? "采购退货出库单" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/purchase/return-outbounds')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ShoppingCart size={16} className="shrink-0" />
+                      {!isCollapsed && <span>采购退货出库单</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* 组4：销售业务管理 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">销售业务管理</span>
-            <ul className="space-y-1 text-xs font-medium">
-              <li>
-                <Link 
-                  to="/sales/orders" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/sales/orders')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ClipboardList size={16} />
-                    <span>销售订单</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/sales/outbounds" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/sales/outbounds')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ShoppingCart size={16} />
-                    <span>销售出库单</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/sales/returns" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/sales/returns')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ReceiptText size={16} />
-                    <span>销售退货单</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('sales'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>销售业务管理</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('sales') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('sales')) && (
+              <ul className="space-y-1 text-[10px] font-medium">
+                <li>
+                  <Link 
+                    to="/sales/orders" 
+                    title={isCollapsed ? "销售订单" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/sales/orders')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ClipboardList size={16} className="shrink-0" />
+                      {!isCollapsed && <span>销售订单</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/sales/outbounds" 
+                    title={isCollapsed ? "销售出库单" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/sales/outbounds')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ShoppingCart size={16} className="shrink-0" />
+                      {!isCollapsed && <span>销售出库单</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/sales/returns" 
+                    title={isCollapsed ? "销售退货单" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/sales/returns')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ReceiptText size={16} className="shrink-0" />
+                      {!isCollapsed && <span>销售退货单</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* 组5：零售收银 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">零售收银</span>
-            <ul className="space-y-1 text-xs font-medium">
-              <li>
-                <Link 
-                  to="/retail" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    location.pathname === '/retail'
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ShoppingCart size={16} />
-                    <span>收银工作台</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/retail/orders" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/retail/orders')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ClipboardList size={16} />
-                    <span>零售单列表</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/retail/returns" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/retail/returns')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ReceiptText size={16} />
-                    <span>零售退货</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('retail'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>零售收银</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('retail') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('retail')) && (
+              <ul className="space-y-1 text-[10px] font-medium">
+                <li>
+                  <Link 
+                    to="/retail" 
+                    title={isCollapsed ? "收银工作台" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      location.pathname === '/retail'
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ShoppingCart size={16} className="shrink-0" />
+                      {!isCollapsed && <span>收银工作台</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/retail/orders" 
+                    title={isCollapsed ? "零售单列表" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/retail/orders')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ClipboardList size={16} className="shrink-0" />
+                      {!isCollapsed && <span>零售单列表</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/retail/returns" 
+                    title={isCollapsed ? "零售退货" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/retail/returns')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ReceiptText size={16} className="shrink-0" />
+                      {!isCollapsed && <span>零售退货</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* 组6：库存管理 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">库存管理</span>
-            <ul className="space-y-1 text-xs">
-              <li>
-                <Link 
-                  to="/inventory/instant-stocks" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/inventory/instant-stocks')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Package size={16} />
-                    <span>即时库存查询</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/inventory/flows" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/inventory/flows')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Package size={16} />
-                    <span>库存收发流水</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('inventory'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>库存管理</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('inventory') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('inventory')) && (
+              <ul className="space-y-1 text-[10px]">
+                <li>
+                  <Link 
+                    to="/inventory/instant-stocks" 
+                    title={isCollapsed ? "即时库存查询" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/inventory/instant-stocks')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <Package size={16} className="shrink-0" />
+                      {!isCollapsed && <span>即时库存查询</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/inventory/flows" 
+                    title={isCollapsed ? "库存收发流水" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/inventory/flows')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <Package size={16} className="shrink-0" />
+                      {!isCollapsed && <span>库存收发流水</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* 组7：往来管理 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">往来管理</span>
-            <ul className="space-y-1 text-xs">
-              <li>
-                <Link 
-                  to="/finance/receivables" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/finance/receivables')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ReceiptText size={16} />
-                    <span>应收管理</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/finance/payables" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/finance/payables')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ReceiptText size={16} />
-                    <span>应付管理</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/finance/receipts" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/finance/receipts')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <CreditCard size={16} />
-                    <span>收款单 RC</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/finance/payments" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/finance/payments')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <CreditCard size={16} />
-                    <span>付款单 PY</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('finance'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>往来管理</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('finance') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('finance')) && (
+              <ul className="space-y-1 text-[10px]">
+                <li>
+                  <Link 
+                    to="/finance/receivables" 
+                    title={isCollapsed ? "应收管理" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/finance/receivables')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ReceiptText size={16} className="shrink-0" />
+                      {!isCollapsed && <span>应收管理</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/finance/payables" 
+                    title={isCollapsed ? "应付管理" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/finance/payables')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <ReceiptText size={16} className="shrink-0" />
+                      {!isCollapsed && <span>应付管理</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/finance/receipts" 
+                    title={isCollapsed ? "收款单 RC" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/finance/receipts')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <CreditCard size={16} className="shrink-0" />
+                      {!isCollapsed && <span>收款单 RC</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/finance/payments" 
+                    title={isCollapsed ? "付款单 PY" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/finance/payments')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <CreditCard size={16} className="shrink-0" />
+                      {!isCollapsed && <span>付款单 PY</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* 组8：经营分析 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">经营分析</span>
-            <ul className="space-y-1 text-xs">
-              <li>
-                <Link 
-                  to="/reports" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/reports')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <BarChart3 size={16} />
-                    <span>报表中心</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('reports'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>经营分析</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('reports') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('reports')) && (
+              <ul className="space-y-1 text-[10px]">
+                <li>
+                  <Link 
+                    to="/reports" 
+                    title={isCollapsed ? "报表中心" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/reports')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <BarChart3 size={16} className="shrink-0" />
+                      {!isCollapsed && <span>报表中心</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* 组9：基础资料 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">基础资料</span>
-            <ul className="space-y-1 text-xs">
-              <li>
-                <Link 
-                  to="/base/suppliers" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/base/suppliers')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Users size={16} />
-                    <span>供应商档案</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/base/customers" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/base/customers')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Users size={16} />
-                    <span>客户档案</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/base/products" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/base/products')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Layers size={16} />
-                    <span>商品档案</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/base/prices" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/base/prices')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <BadgePercent size={16} />
-                    <span>价格管理</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/base/warehouses" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/base/warehouses')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Layers size={16} />
-                    <span>仓库档案</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('base'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>基础资料</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('base') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('base')) && (
+              <ul className="space-y-1 text-[10px]">
+                <li>
+                  <Link 
+                    to="/base/suppliers" 
+                    title={isCollapsed ? "供应商档案" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/base/suppliers')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <Users size={16} className="shrink-0" />
+                      {!isCollapsed && <span>供应商档案</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/base/customers" 
+                    title={isCollapsed ? "客户档案" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/base/customers')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <Users size={16} className="shrink-0" />
+                      {!isCollapsed && <span>客户档案</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/base/products" 
+                    title={isCollapsed ? "商品档案" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/base/products')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <Layers size={16} className="shrink-0" />
+                      {!isCollapsed && <span>商品档案</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/base/prices" 
+                    title={isCollapsed ? "价格管理" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/base/prices')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <BadgePercent size={16} className="shrink-0" />
+                      {!isCollapsed && <span>价格管理</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/base/warehouses" 
+                    title={isCollapsed ? "仓库档案" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/base/warehouses')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <Layers size={16} className="shrink-0" />
+                      {!isCollapsed && <span>仓库档案</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
+          {/* 组10：系统管理 */}
           <div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">系统管理</span>
-            <ul className="space-y-1 text-xs">
-              <li>
-                <Link 
-                  to="/settings" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    location.pathname === '/settings'
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Settings size={16} />
-                    <span>系统设置</span>
-                  </div>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/settings/logs" 
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
-                    isMenuChecked('/settings/logs')
-                      ? 'bg-primary text-white font-bold' 
-                      : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <FileClock size={16} />
-                    <span>操作日志</span>
-                  </div>
-                </Link>
-              </li>
-            </ul>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('settings'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>系统管理</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('settings') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('settings')) && (
+              <ul className="space-y-1 text-[10px]">
+                <li>
+                  <Link 
+                    to="/settings" 
+                    title={isCollapsed ? "系统设置" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      location.pathname === '/settings'
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <Settings size={16} className="shrink-0" />
+                      {!isCollapsed && <span>系统设置</span>}
+                    </div>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/settings/logs" 
+                    title={isCollapsed ? "操作日志" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/settings/logs')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <FileClock size={16} className="shrink-0" />
+                      {!isCollapsed && <span>操作日志</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </div>
+
+          {/* 组11：操作支持 */}
+          <div>
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleGroup('support'); }}
+                className="w-full flex items-center justify-between px-3 text-xs font-bold text-white uppercase tracking-wider mb-2 hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <span>操作支持</span>
+                <span className="text-[8px] transform transition-transform duration-200">
+                  {expandedGroups.includes('support') ? '▼' : '▶'}
+                </span>
+              </button>
+            ) : null}
+            {(isCollapsed || expandedGroups.includes('support')) && (
+              <ul className="space-y-1 text-[10px] font-medium">
+                <li>
+                  <Link 
+                    to="/manual" 
+                    title={isCollapsed ? "操作手册" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/manual')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <BookOpen size={16} className="shrink-0" />
+                      {!isCollapsed && <span>操作手册</span>}
+                    </div>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
         </nav>
 
         {/* 底部用户信息 */}
-        <div className="app-sidebar-user p-4 border-t border-slate-800 bg-slate-950 flex items-center gap-3 text-xs">
-          <div className="bg-slate-800 p-2 rounded-full text-slate-300">
+        <div className={`app-sidebar-user p-4 border-t border-slate-800 bg-slate-950 flex items-center text-xs transition-all duration-300 ${
+          isCollapsed ? 'justify-center px-2 gap-0' : 'gap-3'
+        }`}>
+          <div className="bg-slate-800 p-2 rounded-full text-slate-300 shrink-0">
             <User size={16} />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-bold text-white truncate">系统管理员</p>
-            <p className="text-[10px] text-slate-500 truncate">admin@qiangsheng.com</p>
-          </div>
+          {!isCollapsed && (
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-white truncate">系统管理员</p>
+              <p className="text-[10px] text-slate-500 truncate">admin@qiangsheng.com</p>
+            </div>
+          )}
         </div>
       </aside>
 
