@@ -4,7 +4,7 @@ import { BaseWarehouse } from '../types/baseData';
 import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Search, RotateCcw, Plus, Edit3, Power } from 'lucide-react';
+import { Search, RotateCcw, Plus, Edit3, Power, Eye } from 'lucide-react';
 
 export default function WarehouseList() {
   const navigate = useNavigate();
@@ -30,13 +30,40 @@ export default function WarehouseList() {
     loadData();
   }, [query]);
 
-  const handleToggleStatus = (code: string) => {
+  const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
+  const [selectedCode, setSelectedCode] = useState('');
+  const [disableReason, setDisableReason] = useState('');
+
+  const handleToggleStatus = (code: string, currentStatus: string) => {
+    if (currentStatus === 'active') {
+      setSelectedCode(code);
+      setDisableReason('');
+      setIsDisableModalOpen(true);
+    } else {
+      if (window.confirm('是否确定启用该仓库？')) {
+        try {
+          baseDataApi.toggleWarehouseStatus(code, 'active');
+          alert('仓库已成功启用');
+          loadData();
+        } catch (e: any) {
+          alert(e.message || '启用失败');
+        }
+      }
+    }
+  };
+
+  const handleConfirmDisable = () => {
+    if (!disableReason.trim()) {
+      alert('请填写停用原因');
+      return;
+    }
     try {
-      const updated = baseDataApi.toggleWarehouseStatus(code);
-      alert(`仓库【${updated.name}】已成功${updated.status === 'active' ? '启用' : '停用'}`);
+      baseDataApi.toggleWarehouseStatus(selectedCode, 'inactive', disableReason);
+      alert('仓库已成功停用');
+      setIsDisableModalOpen(false);
       loadData();
     } catch (e: any) {
-      alert(e.message || '操作失败');
+      alert(e.message || '停用失败');
     }
   };
 
@@ -131,13 +158,19 @@ export default function WarehouseList() {
                       <td className="p-3 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
+                            onClick={() => navigate(`/base/warehouses/${wh.code}`)}
+                            className="text-slate-500 hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+                          >
+                            <Eye size={13} /> 查看
+                          </button>
+                          <button
                             onClick={() => navigate(`/base/warehouses/${wh.code}/edit`)}
                             className="text-primary hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
                           >
                             <Edit3 size={13} /> 编辑
                           </button>
                           <button
-                            onClick={() => handleToggleStatus(wh.code)}
+                            onClick={() => handleToggleStatus(wh.code, wh.status)}
                             className={`flex items-center gap-0.5 cursor-pointer font-bold ${
                               isInactive ? 'text-emerald-600 hover:text-emerald-700' : 'text-rose-500 hover:text-rose-600'
                             }`}
@@ -160,6 +193,35 @@ export default function WarehouseList() {
           </table>
         </div>
       </div>
+      {/* 停用原因确认 Modal */}
+      {isDisableModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-lg border border-slate-100 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150 text-xs">
+            <div className="pb-2 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-800">确认停用仓库</h3>
+              <p className="text-[10px] text-slate-500 mt-0.5">该操作会将当前仓库状态标记为停用，请录入停用原因以供备案。</p>
+            </div>
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-500 block">停用原因 <span className="text-rose-500">*</span></label>
+              <textarea
+                value={disableReason}
+                onChange={e => setDisableReason(e.target.value)}
+                placeholder="请输入停用原因（必填）..."
+                rows={3}
+                className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-slate-700 font-medium"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <Button variant="outline" size="sm" onClick={() => setIsDisableModalOpen(false)}>
+                取消
+              </Button>
+              <Button size="sm" onClick={handleConfirmDisable} className="font-semibold bg-rose-600 hover:bg-rose-700">
+                确认停用
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

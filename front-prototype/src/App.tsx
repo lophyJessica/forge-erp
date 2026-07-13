@@ -51,6 +51,10 @@ import ProductList from './pages/ProductList';
 import ProductForm from './pages/ProductForm';
 import WarehouseList from './pages/WarehouseList';
 import WarehouseForm from './pages/WarehouseForm';
+import WarehouseDetail from './pages/WarehouseDetail';
+import ProductDetail from './pages/ProductDetail';
+import CustomerDetail from './pages/CustomerDetail';
+import SupplierDetail from './pages/SupplierDetail';
 import PriceList from './pages/PriceList';
 import SystemSettingsPage from './pages/Settings';
 import AuditLog from './pages/AuditLog';
@@ -1528,6 +1532,14 @@ export default function App() {
             </RouteWrapper>
           } 
         />
+        <Route 
+          path="/base/suppliers/:code" 
+          element={
+            <RouteWrapper>
+              <SupplierDetail />
+            </RouteWrapper>
+          } 
+        />
 
         <Route 
           path="/base/customers" 
@@ -1553,6 +1565,14 @@ export default function App() {
             </RouteWrapper>
           } 
         />
+        <Route 
+          path="/base/customers/:code" 
+          element={
+            <RouteWrapper>
+              <CustomerDetail />
+            </RouteWrapper>
+          } 
+        />
 
         <Route 
           path="/base/products" 
@@ -1575,6 +1595,14 @@ export default function App() {
           element={
             <RouteWrapper>
               <ProductForm />
+            </RouteWrapper>
+          } 
+        />
+        <Route 
+          path="/base/products/:code" 
+          element={
+            <RouteWrapper>
+              <ProductDetail />
             </RouteWrapper>
           } 
         />
@@ -1609,6 +1637,14 @@ export default function App() {
           element={
             <RouteWrapper>
               <WarehouseForm />
+            </RouteWrapper>
+          } 
+        />
+        <Route 
+          path="/base/warehouses/:code" 
+          element={
+            <RouteWrapper>
+              <WarehouseDetail />
             </RouteWrapper>
           } 
         />

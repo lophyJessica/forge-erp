@@ -40,10 +40,7 @@ export default function PurchaseOrderDetail() {
   const [isVoidModalOpen, setIsVoidModalOpen] = useState(false);
   const [voidReason, setVoidReason] = useState('');
 
-  // 创建入库单作业弹窗
-  const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
-  const [stockInQuantities, setStockInQuantities] = useState<Record<string, number>>({});
-  const [stockInError, setStockInError] = useState('');
+
 
   // --- 数据加载 ---
   const loadData = async () => {
@@ -64,12 +61,7 @@ export default function PurchaseOrderDetail() {
     void loadData();
   }, [id]);
 
-  useEffect(() => {
-    if (order && location.state?.openStockIn) {
-      handleOpenStockInModal();
-      window.history.replaceState({}, document.title);
-    }
-  }, [order, location.state]);
+
 
   if (!order) return <div className="p-8 text-center text-slate-400">加载中...</div>;
 
@@ -147,67 +139,7 @@ export default function PurchaseOrderDetail() {
     }
   };
 
-  // --- 入库单作业处理 ---
-  const handleOpenStockInModal = () => {
-    // 预填本次入库数量为所有的未入库数量
-    const defaultQuants: Record<string, number> = {};
-    order.items.forEach(item => {
-      defaultQuants[item.id] = item.pendingQuantity;
-    });
-    setStockInQuantities(defaultQuants);
-    setStockInError('');
-    setIsStockInModalOpen(true);
-  };
 
-  const handleStockInQtyChange = (itemId: string, val: string) => {
-    const num = val === '' ? 0 : parseInt(val);
-    setStockInQuantities(prev => ({
-      ...prev,
-      [itemId]: num
-    }));
-  };
-
-  const handleConfirmStockIn = () => {
-    // 校验超收
-    let hasError = false;
-    let totalInQty = 0;
-    const itemsIn: { itemId: string; qty: number }[] = [];
-
-    for (const item of order.items) {
-      const inputQty = stockInQuantities[item.id] || 0;
-      totalInQty += inputQty;
-      
-      if (inputQty < 0) {
-        setStockInError(`商品 ${item.productName} 入库数不能小于0`);
-        hasError = true;
-        break;
-      }
-      
-      // 核心业务场景：超收阻断
-      if (inputQty > item.pendingQuantity) {
-        setStockInError(`超收阻断：商品 [${item.productCode}] ${item.productName} 本次入库数量 (${inputQty}) 超过其未入库数量 (${item.pendingQuantity})`);
-        hasError = true;
-        break;
-      }
-      
-      itemsIn.push({ itemId: item.id, qty: inputQty });
-    }
-
-    if (hasError) return;
-    if (totalInQty === 0) {
-      setStockInError('本次入库总数量必须大于 0 件');
-      return;
-    }
-
-    try {
-      purchaseOrderApi.createStockIn(order.id, itemsIn);
-      setIsStockInModalOpen(false);
-      alert('采购入库单已自动创建并成功扣减订单未入库数量');
-      void loadData();
-    } catch (err: any) {
-      setStockInError(err.message || '入库失败');
-    }
-  };
 
   // --- 时间线计算 ---
   const getTimelineSteps = () => {
@@ -713,74 +645,6 @@ export default function PurchaseOrderDetail() {
         </div>
       )}
 
-      {/* 创建入库单作业弹窗 (模拟收货确认) */}
-      {isStockInModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg border border-slate-100 max-w-2xl w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-              <div>
-                <h3 className="text-sm font-bold text-slate-800">采购入库作业 (收货确认)</h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">录入实收到货数量。实收数不允许超过订单未入库数，超收将阻断提交。</p>
-              </div>
-              <button onClick={() => setIsStockInModalOpen(false)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 cursor-pointer">
-                <XCircle size={18} />
-              </button>
-            </div>
-
-            {stockInError && (
-              <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 text-xs font-semibold rounded-md">
-                {stockInError}
-              </div>
-            )}
-
-            {/* 实收输入表格 */}
-            <div className="overflow-y-auto flex-1 border border-slate-100 rounded-md text-xs">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50 sticky top-0 z-10 text-slate-500 font-semibold">
-                    <th className="p-3 w-28">商品编码</th>
-                    <th className="p-3">商品名称</th>
-                    <th className="p-3 text-right w-24">订单采购数</th>
-                    <th className="p-3 text-right w-24 text-emerald-600">已入库数</th>
-                    <th className="p-3 text-right w-24 text-amber-600">剩余未入</th>
-                    <th className="p-3 text-right w-28 text-primary">本次实收数</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {order.items.map(item => (
-                    <tr key={item.id} className="hover:bg-slate-50/10">
-                      <td className="p-3 font-semibold">{item.productCode}</td>
-                      <td className="p-3">{item.productName}</td>
-                      <td className="p-3 text-right">{item.quantity}</td>
-                      <td className="p-3 text-right text-emerald-600 font-semibold">{item.receivedQuantity}</td>
-                      <td className="p-3 text-right text-amber-600 font-semibold">{item.pendingQuantity}</td>
-                      <td className="p-3" onClick={e => e.stopPropagation()}>
-                        <Input
-                          type="number"
-                          min="0"
-                          max={item.pendingQuantity}
-                          value={stockInQuantities[item.id] === undefined ? '' : stockInQuantities[item.id]}
-                          onChange={e => handleStockInQtyChange(item.id, e.target.value)}
-                          className="text-right h-8 text-xs font-bold border-primary/30 focus:ring-primary w-24 ml-auto"
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 text-xs">
-              <Button variant="outline" size="sm" onClick={() => setIsStockInModalOpen(false)}>
-                取消
-              </Button>
-              <Button size="sm" onClick={handleConfirmStockIn} className="font-semibold bg-emerald-600 hover:bg-emerald-700">
-                确认入库
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

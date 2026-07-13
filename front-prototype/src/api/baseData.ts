@@ -61,11 +61,17 @@ export const baseDataApi = {
     return data;
   },
 
-  toggleSupplierStatus(code: string): BaseSupplier {
+  toggleSupplierStatus(code: string, status?: 'active' | 'inactive', disableReason?: string): BaseSupplier {
     const list = this.getSuppliers();
     const idx = list.findIndex(x => x.code === code);
     if (idx === -1) throw new Error('供应商不存在');
-    list[idx].status = list[idx].status === 'active' ? 'inactive' : 'active';
+    const targetStatus = status || (list[idx].status === 'active' ? 'inactive' : 'active');
+    list[idx].status = targetStatus;
+    if (targetStatus === 'inactive') {
+      (list[idx] as any).disableReason = disableReason;
+    } else {
+      delete (list[idx] as any).disableReason;
+    }
     replaceTable('suppliers', list, 'code');
     return list[idx];
   },
@@ -95,11 +101,17 @@ export const baseDataApi = {
     return data;
   },
 
-  toggleCustomerStatus(code: string): BaseCustomer {
+  toggleCustomerStatus(code: string, status?: 'active' | 'inactive', disableReason?: string): BaseCustomer {
     const list = this.getCustomers();
     const idx = list.findIndex(x => x.code === code);
     if (idx === -1) throw new Error('客户不存在');
-    list[idx].status = list[idx].status === 'active' ? 'inactive' : 'active';
+    const targetStatus = status || (list[idx].status === 'active' ? 'inactive' : 'active');
+    list[idx].status = targetStatus;
+    if (targetStatus === 'inactive') {
+      (list[idx] as any).disableReason = disableReason;
+    } else {
+      delete (list[idx] as any).disableReason;
+    }
     replaceTable('customers', list, 'code');
     return list[idx];
   },
@@ -129,11 +141,17 @@ export const baseDataApi = {
     return data;
   },
 
-  toggleProductStatus(code: string): BaseProduct {
+  toggleProductStatus(code: string, status?: 'active' | 'inactive', disableReason?: string): BaseProduct {
     const list = this.getProducts();
     const idx = list.findIndex(x => x.code === code);
     if (idx === -1) throw new Error('商品不存在');
-    list[idx].status = list[idx].status === 'active' ? 'inactive' : 'active';
+    const targetStatus = status || (list[idx].status === 'active' ? 'inactive' : 'active');
+    list[idx].status = targetStatus;
+    if (targetStatus === 'inactive') {
+      (list[idx] as any).disableReason = disableReason;
+    } else {
+      delete (list[idx] as any).disableReason;
+    }
     replaceTable('products', list, 'code');
     return list[idx];
   },
@@ -163,11 +181,17 @@ export const baseDataApi = {
     return data;
   },
 
-  toggleWarehouseStatus(code: string): BaseWarehouse {
+  toggleWarehouseStatus(code: string, status?: 'active' | 'inactive', disableReason?: string): BaseWarehouse {
     const list = this.getWarehouses();
     const idx = list.findIndex(x => x.code === code);
     if (idx === -1) throw new Error('仓库不存在');
-    list[idx].status = list[idx].status === 'active' ? 'inactive' : 'active';
+    const targetStatus = status || (list[idx].status === 'active' ? 'inactive' : 'active');
+    list[idx].status = targetStatus;
+    if (targetStatus === 'inactive') {
+      (list[idx] as any).disableReason = disableReason;
+    } else {
+      delete (list[idx] as any).disableReason;
+    }
     replaceTable('warehouses', list, 'code');
     return list[idx];
   },

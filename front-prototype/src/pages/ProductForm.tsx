@@ -65,6 +65,10 @@ export default function ProductForm() {
       errs.referenceCostPrice = '参考成本价不能小于 0';
     }
 
+    if (formData.safetyStock !== undefined && (!Number.isInteger(formData.safetyStock) || formData.safetyStock < 0)) {
+      errs.safetyStock = '安全库存必须为非负整数';
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -245,6 +249,26 @@ export default function ProductForm() {
               }`}
             />
             {errors.referenceCostPrice && <span className="text-[10px] text-rose-500 font-bold block">{errors.referenceCostPrice}</span>}
+          </div>
+
+          {/* 安全库存 */}
+          <div className="space-y-1">
+            <label className="font-semibold text-slate-500 block">安全库存</label>
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              value={formData.safetyStock ?? ''}
+              onChange={e => setFormData({
+                ...formData,
+                safetyStock: e.target.value === '' ? undefined : Number(e.target.value)
+              })}
+              placeholder="选填，非负整数"
+              className={`h-9 text-xs font-bold ${
+                errors.safetyStock ? 'border-rose-500 bg-rose-50/10' : ''
+              }`}
+            />
+            {errors.safetyStock && <span className="text-[10px] text-rose-500 font-bold block">{errors.safetyStock}</span>}
           </div>
         </div>
 

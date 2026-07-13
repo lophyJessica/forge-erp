@@ -33,6 +33,7 @@ export interface BaseProduct {
   defaultPurchasePrice: number; // 默认采购价
   defaultRetailPrice: number; // 默认零售价
   referenceCostPrice: number; // 参考成本价
+  safetyStock?: number; // 安全库存
   status: BaseDataStatus;
 }
 
