@@ -5,6 +5,9 @@ import { purchaseReturnApi } from '../api/purchaseReturn';
 import { MOCK_WAREHOUSES } from '../api/purchaseOrder';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
 import { 
   Search, RotateCcw, Download, Eye, Edit3, Trash2, 
   XCircle, CheckCircle, ArrowRightLeft 
@@ -28,7 +31,7 @@ export default function PurchaseReturnList() {
 
   // 分页
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
 
   // 二次确认框
   const [confirmAction, setConfirmAction] = useState<{
@@ -124,40 +127,25 @@ export default function PurchaseReturnList() {
   };
 
   // 分页计算
-  const totalPages = Math.ceil(returns.length / pageSize) || 1;
   const paginatedReturns = returns.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-4">
-      {/* 选项卡 Tab */}
-      <div className="flex border-b border-slate-200 bg-white px-4 pt-3 rounded-t-lg shadow-sm">
-        {(['ALL', 'DRAFT', 'CONFIRMED', 'VOIDED'] as const).map(tab => {
-          const isActive = activeTab === tab;
-          const label = tab === 'ALL' ? '全部' : tab === 'DRAFT' ? '草稿' : tab === 'CONFIRMED' ? '已确认' : '已作废';
-          const count = getTabCount(tab);
-          
-          let colorClass = 'border-transparent text-slate-500 hover:text-slate-700';
-          if (isActive) {
-            if (tab === 'DRAFT') colorClass = 'border-emerald-500 text-emerald-600 font-bold';
-            else if (tab === 'CONFIRMED') colorClass = 'border-primary text-primary font-bold';
-            else if (tab === 'VOIDED') colorClass = 'border-rose-500 text-rose-600 font-bold';
-            else colorClass = 'border-slate-800 text-slate-800 font-bold';
-          }
+      <PageTitle compact title="采购退货单" description="从已确认采购入库单发起退货申请，确认后进入退货出库执行。" actions={(
+        <Button onClick={() => navigate('/purchase/returns/new')} className="flex items-center gap-1.5"><ArrowRightLeft size={15} />新建采购退货</Button>
+      )} />
 
-          return (
-            <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
-              className={`px-4 py-2 text-xs border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${colorClass}`}
-            >
-              <span>{label}</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                isActive ? 'bg-slate-100' : 'bg-slate-50 text-slate-400'
-              }`}>{count}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StatusTabs
+        className="rounded-t-lg shadow-sm"
+        items={(['ALL', 'DRAFT', 'CONFIRMED', 'VOIDED'] as const).map(tab => ({
+          key: tab,
+          label: tab === 'ALL' ? '全部' : tab === 'DRAFT' ? '草稿' : tab === 'CONFIRMED' ? '已确认' : '已作废',
+          count: getTabCount(tab),
+        }))}
+        activeKey={activeTab}
+        onChange={key => { setActiveTab(key as PurchaseReturnStatus | 'ALL'); setCurrentPage(1); }}
+        ariaLabel="采购退货状态筛选"
+      />
 
       {/* 查询卡片 */}
       <div className="bg-white p-6 rounded-b-lg shadow-sm border-x border-b border-slate-100 space-y-4">
@@ -393,31 +381,18 @@ export default function PurchaseReturnList() {
           </table>
         </div>
 
-        {/* 分页 */}
-        <div className="p-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-500 bg-slate-50/50">
-          <span>共 {returns.length} 条记录，当前第 {currentPage} / {totalPages} 页</span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              className="h-8 text-xs font-bold disabled:opacity-40 border-slate-200 bg-white"
-            >
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              className="h-8 text-xs font-bold disabled:opacity-40 border-slate-200 bg-white"
-            >
-              下一页
-            </Button>
-          </div>
-        </div>
       </div>
+
+      <Pagination
+        page={currentPage}
+        pageSize={pageSize}
+        total={returns.length}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={nextPageSize => {
+          setPageSize(nextPageSize);
+          setCurrentPage(1);
+        }}
+      />
 
       {/* 二次确认框 */}
       {confirmAction.type && (

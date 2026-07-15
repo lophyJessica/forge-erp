@@ -5,6 +5,10 @@ import { salesApi } from '../api/sales';
 import type { SalesOutbound, SalesOutboundStatus } from '../types/sales';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 
 const STATUS_TABS: Array<SalesOutboundStatus | 'ALL'> = ['ALL', 'DRAFT', 'CONFIRMED', 'VOIDED'];
 const STATUS_META: Record<SalesOutboundStatus | 'ALL', { label: string; classes: string }> = {
@@ -23,6 +27,7 @@ export default function SalesOutboundList() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<SalesOutboundStatus | 'ALL'>('ALL');
   const [outbounds, setOutbounds] = useState<SalesOutbound[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(outbounds);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [sooNumber, setSooNumber] = useState('');
   const [soNumber, setSoNumber] = useState('');
@@ -98,12 +103,7 @@ export default function SalesOutboundList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-lg font-bold text-slate-800">销售出库单</h1>
-          <p className="text-xs text-slate-500 mt-1">SOO 确认时扣减现存、释放占用、生成库存流水与应收。</p>
-        </div>
-      </div>
+      <PageTitle compact title="销售出库单" description="SOO 确认时扣减现存、释放占用、生成库存流水与应收。" />
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 space-y-4">
         <form
@@ -129,20 +129,13 @@ export default function SalesOutboundList() {
           </Button>
         </form>
 
-        <div className="flex gap-2 flex-wrap border-b border-slate-100 pb-3">
-          {STATUS_TABS.map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-colors ${
-                activeTab === tab ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {STATUS_META[tab].label}
-              <span className={`ml-1 ${activeTab === tab ? 'text-white/80' : 'text-slate-400'}`}>{counts[tab] || 0}</span>
-            </button>
-          ))}
-        </div>
+        <StatusTabs
+          className="-mx-4"
+          items={STATUS_TABS.map(tab => ({ key: tab, label: STATUS_META[tab].label, count: counts[tab] || 0 }))}
+          activeKey={activeTab}
+          onChange={key => setActiveTab(key as SalesOutboundStatus | 'ALL')}
+          ariaLabel="销售出库状态筛选"
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -158,7 +151,7 @@ export default function SalesOutboundList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {outbounds.map(outbound => (
+              {pageRows.map(outbound => (
                 <tr key={outbound.id} onClick={() => navigate(`/sales/outbounds/${outbound.id}`)} className="hover:bg-slate-50/50 cursor-pointer">
                   <td className="p-3 font-mono font-bold text-primary">{outbound.id}</td>
                   <td className="p-3 font-mono font-semibold text-indigo-600">{outbound.salesOrderId}</td>
@@ -174,6 +167,7 @@ export default function SalesOutboundList() {
           </table>
         </div>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={outbounds.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

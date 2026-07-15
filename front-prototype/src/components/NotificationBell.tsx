@@ -69,6 +69,7 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen(value => !value)}
+        title="消息通知"
         className="p-1.5 hover:bg-slate-100 rounded-full relative cursor-pointer"
         aria-label="消息通知"
       >
@@ -81,7 +82,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-9 z-50 w-96 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+        <div className="notification-popover absolute right-0 top-9 z-50 w-96 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <div>
               <p className="text-sm font-black text-slate-800">消息通知</p>

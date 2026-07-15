@@ -4,6 +4,12 @@ import { BaseCustomer } from '../types/baseData';
 import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import Modal from '../components/shared/Modal';
+import { usePagination } from '../hooks/usePagination';
 import { Search, RotateCcw, Plus, Edit3, Power, Eye } from 'lucide-react';
 
 export default function CustomerList() {
@@ -11,6 +17,7 @@ export default function CustomerList() {
 
   const [query, setQuery] = useState('');
   const [customers, setCustomers] = useState<BaseCustomer[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(customers);
 
   const loadData = () => {
     const list = baseDataApi.getCustomers();
@@ -69,10 +76,21 @@ export default function CustomerList() {
 
   return (
     <div className="space-y-4">
-      {/* 搜索卡片 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
-        <form onSubmit={e => { e.preventDefault(); loadData(); }} className="flex flex-1 items-center gap-3">
-          <div className="w-72">
+      <PageTitle
+        compact
+        title="客户档案"
+        description="维护销售客户、价格级别、信用额度与结算账期。"
+        actions={(
+          <Button onClick={() => navigate('/base/customers/new')} className="flex items-center gap-1.5">
+            <Plus size={14} /> 新增客户
+          </Button>
+        )}
+      />
+
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="!p-4">
+        <div className="flex flex-wrap items-end gap-3 text-xs">
+          <div className="min-w-[16rem] flex-1 sm:max-w-sm">
+            <label className="mb-1 block font-semibold text-slate-500">客户关键词</label>
             <Input
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -91,19 +109,11 @@ export default function CustomerList() {
           >
             <RotateCcw size={14} /> 重置
           </Button>
-        </form>
-
-        <Button
-          onClick={() => navigate('/base/customers/new')}
-          className="h-9 px-4 flex items-center gap-1 font-bold bg-primary text-white"
-        >
-          <Plus size={14} /> 新增客户
-        </Button>
-      </div>
+        </div>
+      </FilterForm>
 
       {/* 客户列表 */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
+      <DataTable minWidth="1120px">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 font-semibold">
@@ -121,7 +131,7 @@ export default function CustomerList() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {customers.length > 0 ? (
-                customers.map(cust => {
+                pageRows.map(cust => {
                   const isInactive = cust.status === 'inactive';
                   return (
                     <tr 
@@ -199,37 +209,30 @@ export default function CustomerList() {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-      {/* 停用原因确认 Modal */}
-      {isDisableModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg border border-slate-100 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150 text-xs">
-            <div className="pb-2 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-800">确认停用客户</h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">该操作会将当前客户状态标记为停用，请录入停用原因以供备案。</p>
-            </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-500 block">停用原因 <span className="text-rose-500">*</span></label>
-              <textarea
-                value={disableReason}
-                onChange={e => setDisableReason(e.target.value)}
-                placeholder="请输入停用原因（必填）..."
-                rows={3}
-                className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-slate-700 font-medium"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <Button variant="outline" size="sm" onClick={() => setIsDisableModalOpen(false)}>
-                取消
-              </Button>
-              <Button size="sm" onClick={handleConfirmDisable} className="font-semibold bg-rose-600 hover:bg-rose-700">
-                确认停用
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={customers.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
+
+      <Modal
+        open={isDisableModalOpen}
+        title="确认停用客户"
+        description="停用后该客户不再进入新销售单据候选，请录入原因以供备案。"
+        onClose={() => setIsDisableModalOpen(false)}
+        footer={(
+          <>
+            <Button variant="outline" size="sm" onClick={() => setIsDisableModalOpen(false)}>取消</Button>
+            <Button size="sm" onClick={handleConfirmDisable} className="bg-rose-600 font-semibold hover:bg-rose-700">确认停用</Button>
+          </>
+        )}
+      >
+        <label className="mb-1 block font-semibold text-slate-500">停用原因 <span className="text-rose-500">*</span></label>
+        <textarea
+          value={disableReason}
+          onChange={e => setDisableReason(e.target.value)}
+          placeholder="请输入停用原因（必填）..."
+          rows={3}
+          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-medium text-slate-700"
+        />
+      </Modal>
     </div>
   );
 }

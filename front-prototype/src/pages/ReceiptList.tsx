@@ -4,6 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { financeApi } from '../api/finance';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 function money(value: number) {
   return `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -24,27 +29,21 @@ export default function ReceiptList() {
       || row.sourceNo.toLowerCase().includes(normalized)
     );
   }, [records, keyword]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(rows);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col lg:flex-row justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-lg font-bold text-slate-800">收款单</h1>
-          <p className="text-xs text-slate-500 mt-1">RC 按来源 SOO 核销，应收余额自动扣减。</p>
+      <PageTitle compact title="收款单" description="RC 按来源 SOO 核销，应收余额自动扣减。" actions={(
+        <Button size="sm" onClick={() => navigate('/finance/receipts/new')} className="gap-1.5 font-bold"><PlusCircle size={14} />新建收款单</Button>
+      )} />
+      <FilterForm onSubmit={event => event.preventDefault()} className="!p-4">
+        <div className="relative w-full sm:max-w-sm">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="搜索 RC / 客户 / SOO" className="h-9 pl-9 text-xs" />
         </div>
-        <div className="flex gap-2">
-          <div className="relative w-72">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="搜索 RC / 客户 / SOO" className="h-9 pl-9 text-xs" />
-          </div>
-          <Button size="sm" onClick={() => navigate('/finance/receipts/new')} className="gap-1.5 font-bold">
-            <PlusCircle size={14} />
-            新建收款单
-          </Button>
-        </div>
-      </div>
+      </FilterForm>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-x-auto">
+      <DataTable minWidth="980px">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 text-xs font-semibold">
@@ -59,7 +58,7 @@ export default function ReceiptList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
-            {rows.map(row => (
+            {pageRows.map(row => (
               <tr key={row.id} className="hover:bg-slate-50/50">
                 <td className="p-3 font-mono font-bold text-emerald-600">{row.id}</td>
                 <td className="p-3 font-mono font-bold text-primary">{row.customerCode}</td>
@@ -74,7 +73,8 @@ export default function ReceiptList() {
             {rows.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-slate-400">暂无收款记录</td></tr>}
           </tbody>
         </table>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

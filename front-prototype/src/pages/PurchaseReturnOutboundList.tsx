@@ -5,6 +5,9 @@ import { purchaseReturnOutboundApi } from '../api/purchaseReturnOutbound';
 import { MOCK_WAREHOUSES } from '../api/purchaseOrder';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
 import { 
   Search, RotateCcw, Download, Eye, Edit3, Trash2, 
   XCircle, CheckCircle 
@@ -28,7 +31,7 @@ export default function PurchaseReturnOutboundList() {
 
   // 分页
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
 
   // 二次确认
   const [confirmAction, setConfirmAction] = useState<{
@@ -102,37 +105,23 @@ export default function PurchaseReturnOutboundList() {
     }
   };
 
+  const paginatedOutbounds = outbounds.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="space-y-4">
-      {/* 选项卡 Tab */}
-      <div className="flex border-b border-slate-200 bg-white px-4 pt-3 rounded-t-lg shadow-sm">
-        {(['ALL', 'DRAFT', 'CONFIRMED', 'VOIDED'] as const).map(tab => {
-          const isActive = activeTab === tab;
-          const label = tab === 'ALL' ? '全部' : tab === 'DRAFT' ? '草稿' : tab === 'CONFIRMED' ? '已确认' : '已作废';
-          const count = getTabCount(tab);
-          
-          let colorClass = 'border-transparent text-slate-500 hover:text-slate-700';
-          if (isActive) {
-            if (tab === 'DRAFT') colorClass = 'border-emerald-500 text-emerald-600 font-bold';
-            else if (tab === 'CONFIRMED') colorClass = 'border-primary text-primary font-bold';
-            else if (tab === 'VOIDED') colorClass = 'border-rose-500 text-rose-600 font-bold';
-            else colorClass = 'border-slate-800 text-slate-800 font-bold';
-          }
+      <PageTitle compact title="采购退货出库单" description="执行已确认采购退货，确认出库后扣减库存并形成退货流水。" />
 
-          return (
-            <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
-              className={`px-4 py-2 text-xs border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${colorClass}`}
-            >
-              <span>{label}</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                isActive ? 'bg-slate-100' : 'bg-slate-50 text-slate-400'
-              }`}>{count}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StatusTabs
+        className="rounded-t-lg shadow-sm"
+        items={(['ALL', 'DRAFT', 'CONFIRMED', 'VOIDED'] as const).map(tab => ({
+          key: tab,
+          label: tab === 'ALL' ? '全部' : tab === 'DRAFT' ? '草稿' : tab === 'CONFIRMED' ? '已确认' : '已作废',
+          count: getTabCount(tab),
+        }))}
+        activeKey={activeTab}
+        onChange={key => { setActiveTab(key as PurchaseReturnOutboundStatus | 'ALL'); setCurrentPage(1); }}
+        ariaLabel="采购退货出库状态筛选"
+      />
 
       {/* 查询卡片 */}
       <div className="bg-white p-6 rounded-b-lg shadow-sm border-x border-b border-slate-100 space-y-4">
@@ -244,7 +233,7 @@ export default function PurchaseReturnOutboundList() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {outbounds.length > 0 ? (
-                outbounds.map(rec => (
+                paginatedOutbounds.map(rec => (
                   <tr key={rec.id} className="hover:bg-slate-50/20">
                     <td className="p-3 text-center">
                       <input
@@ -356,6 +345,17 @@ export default function PurchaseReturnOutboundList() {
           </table>
         </div>
       </div>
+
+      <Pagination
+        page={currentPage}
+        pageSize={pageSize}
+        total={outbounds.length}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={nextPageSize => {
+          setPageSize(nextPageSize);
+          setCurrentPage(1);
+        }}
+      />
 
       {/* 二次确认对话框 */}
       {confirmAction.type && (

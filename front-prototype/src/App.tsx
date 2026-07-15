@@ -62,10 +62,16 @@ import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
 import NotificationCenter from './pages/NotificationCenter';
 import ManualPage from './pages/ManualPage';
+import NotFoundPage from './pages/NotFoundPage';
 import NotificationBell from './components/NotificationBell';
+import AppShell from './components/layout/AppShell';
+import Sidebar from './components/layout/Sidebar';
+import TopNav from './components/layout/TopNav';
+import PageSurface from './components/shared/PageSurface';
+import ForgeLayout from './components/layout/ForgeLayout';
 import { 
   ClipboardList, ShoppingCart, BarChart3, Users, Settings, 
-  Layers, Package, Menu, User, Home, ReceiptText, CreditCard, FileClock, FileText, BadgePercent, BookOpen
+  Layers, Package, Menu, User, Home, ReceiptText, CreditCard, FileClock, FileText, BadgePercent, BookOpen, ChevronDown
 } from 'lucide-react';
 import React from 'react';
 
@@ -75,6 +81,11 @@ function Layout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const isCollapsed = false;
   const [expandedGroups, setExpandedGroups] = React.useState<string[]>([]);
+  const topbarDate = React.useMemo(() => {
+    const now = new Date();
+    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${weekdays[now.getDay()]}`;
+  }, []);
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev =>
@@ -85,6 +96,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   };
 
   React.useEffect(() => {
+    setIsMobileMenuOpen(false);
     let activeGroup = '';
     const path = location.pathname;
     if (path === '/') {
@@ -125,9 +137,11 @@ function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="app-shell flex min-h-screen bg-slate-50/50 text-slate-800 font-sans">
+    <AppShell
+      sidebar={(
+        <>
       {/* 侧边栏 */}
-      <aside className={`app-sidebar bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 transition-all duration-300 ${
+      <Sidebar className={`app-sidebar bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 transition-all duration-300 ${
         isCollapsed ? 'w-16' : 'w-64'
       } ${isMobileMenuOpen ? 'is-open' : ''}`}>
         {/* 系统 LOGO 区域 */}
@@ -150,6 +164,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             type="button"
             className="app-mobile-menu-button"
             aria-label={isMobileMenuOpen ? '收起导航菜单' : '展开导航菜单'}
+            title={isMobileMenuOpen ? '收起导航菜单' : '展开导航菜单'}
             aria-expanded={isMobileMenuOpen}
             onClick={() => setIsMobileMenuOpen(prev => !prev)}
           >
@@ -171,7 +186,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>主工作台</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('dashboard') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('dashboard') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -209,7 +224,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>合同管理</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('contracts') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('contracts') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -247,7 +262,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>采购业务管理</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('purchase') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('purchase') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -359,7 +374,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>销售业务管理</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('sales') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('sales') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -433,7 +448,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>零售收银</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('retail') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('retail') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -507,7 +522,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>库存管理</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('inventory') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('inventory') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -563,7 +578,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>往来管理</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('finance') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('finance') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -655,7 +670,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>经营分析</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('reports') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('reports') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -693,7 +708,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>基础资料</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('base') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('base') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -803,7 +818,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>系统管理</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('settings') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('settings') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -859,7 +874,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 <span>操作支持</span>
                 <span className="text-[8px] transform transition-transform duration-200">
-                  {expandedGroups.includes('support') ? '▼' : '▶'}
+                  <ChevronDown size={12} className={`transition-transform ${expandedGroups.includes('support') ? '' : '-rotate-90'}`} />
                 </span>
               </button>
             ) : null}
@@ -902,12 +917,20 @@ function Layout({ children }: { children: React.ReactNode }) {
             </div>
           )}
         </div>
-      </aside>
+      </Sidebar>
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="关闭导航菜单"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="app-mobile-menu-backdrop fixed inset-0 z-30 bg-slate-950/40 md:hidden"
+        />
+      )}
+        </>
+      )}
+      topNav={(
+        <TopNav className="app-topbar h-16 px-4 lg:px-8">
 
-      {/* 主面板 */}
-      <div className="app-main-panel flex-1 flex flex-col min-w-0">
-        {/* 页头 */}
-        <header className="app-topbar h-16 bg-white border-b border-slate-200/80 flex justify-between items-center px-8 shadow-sm">
           {/* 面包屑 */}
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
             <span>
@@ -1003,23 +1026,20 @@ function Layout({ children }: { children: React.ReactNode }) {
             <div className="h-6 w-px bg-slate-200" />
             <div className="flex items-center gap-2 text-xs font-bold">
               <span className="bg-primary/10 text-primary px-2 py-0.5 rounded">演示环境</span>
-              <span>2026-07-05 星期日</span>
+              <span>{topbarDate}</span>
             </div>
           </div>
-        </header>
-
-        {/* 内容页面容器 */}
-        <main className="app-content flex-1 p-6 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-    </div>
+        </TopNav>
+      )}
+    >
+      {children}
+    </AppShell>
   );
 }
 
 // 包装组件以提供 Layout 上下文
 function RouteWrapper({ children }: { children: React.ReactNode }) {
-  return <Layout>{children}</Layout>;
+  return <ForgeLayout><PageSurface>{children}</PageSurface></ForgeLayout>;
 }
 
 export default function App() {
@@ -1666,6 +1686,7 @@ export default function App() {
             </RouteWrapper>
           } 
         />
+        <Route path="*" element={<RouteWrapper><NotFoundPage /></RouteWrapper>} />
       </Routes>
     </HashRouter>
   );

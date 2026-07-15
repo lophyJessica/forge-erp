@@ -5,6 +5,9 @@ import { retailApi } from '../api/retail';
 import type { RetailOrder } from '../types/retail';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 function money(value: number) {
   return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -25,6 +28,7 @@ export default function RetailList() {
       || retailApi.getPaymentLabel(order.paymentMethod).includes(keyword.trim())
     );
   }, [orders, keyword]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(filtered);
 
   const totalPaid = filtered.reduce((sum, order) => sum + order.paidAmount, 0);
   const totalDiscount = filtered.reduce((sum, order) => sum + order.discountAmount + order.roundOffAmount, 0);
@@ -87,16 +91,12 @@ export default function RetailList() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-lg font-black text-slate-800">零售单列表</h1>
-          <p className="text-xs text-slate-500 mt-1">RS 全部为已确认记录，结账即扣减库存并完成收款核销。</p>
-        </div>
-        <div className="relative w-full lg:w-80">
+      <PageTitle compact title="零售单列表" description="RS 全部为已确认记录，结账即扣减库存并完成收款核销。" actions={(
+        <div className="relative w-full sm:w-80">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="搜索 RS 单号 / 收银员 / 支付方式" className="h-9 pl-9 text-xs" />
         </div>
-      </div>
+      )} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-100 h-28 flex flex-col justify-between">
@@ -142,7 +142,7 @@ export default function RetailList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {filtered.map(order => (
+              {pageRows.map(order => (
                 <tr key={order.id} className="hover:bg-slate-50/60">
                   <td className="p-3 font-mono font-black text-primary">{order.id}</td>
                   <td className="p-3 font-bold text-slate-700">{order.cashierName}</td>
@@ -175,6 +175,7 @@ export default function RetailList() {
           </table>
         </div>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

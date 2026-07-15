@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { InstantStock } from '../types/stockIn';
 import { stockInApi } from '../api/stockIn';
 import { MOCK_PRODUCTS, MOCK_WAREHOUSES } from '../api/purchaseOrder';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
 import { Search, RotateCcw, Download, AlertTriangle } from 'lucide-react';
 
 export default function InstantStockList() {
-  const navigate = useNavigate();
-
   // --- 筛选条件状态 ---
   const [warehouseCode, setWarehouseCode] = useState('');
   const [productCode, setProductCode] = useState('');
@@ -58,7 +59,6 @@ export default function InstantStockList() {
   };
 
   // 分页计算
-  const totalPages = Math.ceil(stocks.length / pageSize) || 1;
   const paginatedStocks = stocks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // 系统查询生成时间
@@ -66,19 +66,25 @@ export default function InstantStockList() {
 
   return (
     <div className="space-y-4">
-      {/* 顶部标题区 */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex justify-between items-center">
-        <div>
-          <h1 className="text-lg font-bold text-slate-800">即时库存查询</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            实时汇总统计各仓商品库存三口径，现存、占用、可用同屏展现
-          </p>
-        </div>
-      </div>
+      <PageTitle
+        compact
+        title="即时库存查询"
+        description="实时汇总统计各仓商品库存三口径，现存、占用、可用同屏展现"
+        actions={(
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={stocks.length === 0}
+            onClick={handleExport}
+            className="flex items-center gap-1.5"
+          >
+            <Download size={14} />
+            导出库存台账
+          </Button>
+        )}
+      />
 
-      {/* 复合搜索过滤区 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100">
-        <form onSubmit={handleSearch} className="space-y-4">
+      <FilterForm onSubmit={handleSearch} className="!p-4">
           <div className="flex flex-wrap items-center gap-6 text-xs">
             {/* 1. 仓库 */}
             <div className="space-y-1 w-48">
@@ -155,11 +161,10 @@ export default function InstantStockList() {
               </Button>
             </div>
           </div>
-        </form>
-      </div>
+      </FilterForm>
 
       {/* 数据展现列表 */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
+      <DataTable minWidth="1200px">
         {/* 工具栏 */}
         <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
           <span className="text-xs text-slate-500 font-bold">
@@ -178,7 +183,7 @@ export default function InstantStockList() {
         </div>
 
         {/* 表格容器：加 overflow-x-auto 并设定 min-w 大于容器以触发横向滚动和 sticky 固定列 */}
-        <div className="overflow-x-auto relative">
+        <div className="relative">
           <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold">
@@ -261,7 +266,8 @@ export default function InstantStockList() {
                       <td className="p-3 text-center sticky right-0 z-10 bg-white border-l border-slate-100 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                         {isBelowSafety ? (
                           <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                            ⚠️低于安全库存
+                            <AlertTriangle size={11} />
+                            低于安全库存
                           </span>
                         ) : (
                           '-'
@@ -281,33 +287,20 @@ export default function InstantStockList() {
           </table>
         </div>
 
-        {/* 分页控制与会话查询生成时间 */}
-        <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center text-xs font-semibold text-slate-500 bg-slate-50/50 gap-2">
-          <div className="flex items-center gap-4">
-            <span>共 {stocks.length} 条库存记录，当前第 {currentPage} / {totalPages} 页</span>
-            <span className="text-slate-400 font-normal">数据生成时间：{queryTime}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              className="h-8 text-xs font-bold disabled:opacity-40 border-slate-200 bg-white"
-            >
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              className="h-8 text-xs font-bold disabled:opacity-40 border-slate-200 bg-white"
-            >
-              下一页
-            </Button>
-          </div>
-        </div>
+      </DataTable>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-xs text-slate-400">数据生成时间：{queryTime}</span>
+        <Pagination
+          page={currentPage}
+          pageSize={pageSize}
+          total={stocks.length}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={nextPageSize => {
+            setPageSize(nextPageSize);
+            setCurrentPage(1);
+          }}
+        />
       </div>
     </div>
   );

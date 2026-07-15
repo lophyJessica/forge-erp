@@ -7,6 +7,7 @@ import { baseDataApi } from '../api/baseData';
 import { readTable, type AccountPayable, type AccountReceivable } from '../db';
 import type { SalesOutbound } from '../types/sales';
 import type { RetailOrder } from '../types/retail';
+import PageTitle from '../components/shared/PageTitle';
 
 type RankedItem = {
   label: string;
@@ -258,18 +259,9 @@ export default function Reports() {
 
   return (
     <div className="space-y-5 pb-12 text-xs">
-      <div className="flex flex-col gap-2 bg-white p-5 rounded-lg shadow-sm border border-slate-100">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-lg font-black text-slate-800">报表中心</h1>
-            <p className="text-xs text-slate-500 mt-1">数据截止日 {data.reportDate}，从本地业务数据表聚合生成。</p>
-          </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-50 border border-slate-100 text-slate-500 font-bold">
-            <Activity size={14} className="text-primary" />
-            自动刷新
-          </div>
-        </div>
-      </div>
+      <PageTitle compact title="报表中心" description={`数据截止日 ${data.reportDate}，从本地业务数据表聚合生成。`} actions={(
+        <div className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 font-bold text-slate-500"><Activity size={14} className="text-primary" />自动刷新</div>
+      )} />
 
       <section className="bg-white rounded-lg shadow-sm border border-slate-100 p-5 space-y-5">
         <SectionTitle icon={<TrendingUp size={17} />} title="销售概览" tone="text-blue-600" />

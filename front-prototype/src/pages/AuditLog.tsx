@@ -4,6 +4,8 @@ import { auditApi, auditModules, createAuditLogMock } from '../api/audit';
 import { AUDIT_OPERATION_LABELS, AuditLogRecord, AuditOperationType } from '../types/audit';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
 
 const operationTone: Record<AuditOperationType, string> = {
   CREATE: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -71,17 +73,11 @@ export default function AuditLog() {
     setShowClearConfirm(false);
   };
 
-  const totalPages = Math.ceil(logs.length / pageSize) || 1;
   const paginatedLogs = logs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-4">
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex justify-between items-center">
-        <div>
-          <h1 className="text-lg font-bold text-slate-800">操作日志</h1>
-          <p className="text-xs text-slate-500 mt-1">系统关键操作只读台账，默认按操作时间倒序展示</p>
-        </div>
-      </div>
+      <PageTitle compact title="操作日志" description="系统关键操作只读台账，默认按操作时间倒序展示。" />
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100">
         <form onSubmit={handleSearch} className="space-y-4">
@@ -241,55 +237,18 @@ export default function AuditLog() {
           </table>
         </div>
 
-        <div className="flex justify-between items-center p-4 border-t border-slate-100 bg-slate-50/20 text-xs text-slate-600">
-          <div className="flex items-center gap-2">
-            <span>每页显示</span>
-            <select
-              value={pageSize}
-              onChange={event => {
-                setPageSize(Number(event.target.value));
-                setCurrentPage(1);
-              }}
-              className="border border-slate-200 rounded p-1 text-xs bg-white"
-            >
-              <option value={20}>20 条</option>
-              <option value={50}>50 条</option>
-              <option value={100}>100 条</option>
-            </select>
-            <span>共 {logs.length} 条，当前第 {currentPage} / {totalPages} 页</span>
-          </div>
-
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="h-7 text-xs px-2 border-slate-200 bg-white"
-            >
-              首页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="h-7 text-xs px-2 border-slate-200 bg-white"
-            >
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="h-7 text-xs px-2 border-slate-200 bg-white"
-            >
-              下一页
-            </Button>
-          </div>
-        </div>
       </div>
+
+      <Pagination
+        page={currentPage}
+        pageSize={pageSize}
+        total={logs.length}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={nextPageSize => {
+          setPageSize(nextPageSize);
+          setCurrentPage(1);
+        }}
+      />
 
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

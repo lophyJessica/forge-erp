@@ -5,6 +5,11 @@ import { stockInApi } from '../api/stockIn';
 import { MOCK_SUPPLIERS, MOCK_WAREHOUSES } from '../api/purchaseOrder';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
 import { 
   Eye, Edit, Trash2, XCircle, Search, RotateCcw, 
   ChevronDown, ChevronUp, Download, CheckCircle, ArrowRightLeft
@@ -194,50 +199,41 @@ export default function StockInList() {
   };
 
   // 分页计算
-  const totalPages = Math.ceil(receipts.length / pageSize) || 1;
   const paginatedReceipts = receipts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-4">
+      <PageTitle
+        compact
+        title="采购入库单"
+        description="承接采购订单的收货结果，确认后更新库存并生成应付结算依据。"
+        actions={(
+          <Button type="button" onClick={() => navigate('/purchase/receipts/new')} className="flex items-center gap-1.5">
+            <ArrowRightLeft size={15} />
+            新建入库单
+          </Button>
+        )}
+      />
+
       {/* 状态 Tab */}
-      <div className="flex border-b border-slate-200/80 bg-white px-6 pt-3 rounded-lg shadow-sm">
-        {(['ALL', 'DRAFT', 'CONFIRMED', 'VOIDED'] as const).map(tab => {
-          const labels: Record<string, string> = {
-            ALL: '全部',
-            DRAFT: '草稿',
-            CONFIRMED: '已确认',
-            VOIDED: '已作废'
-          };
-          const count = tabCounts[tab] || 0;
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              onClick={() => {
-                setActiveTab(tab);
-                setCurrentPage(1);
-              }}
-              className={`pb-3 px-4 text-xs font-bold transition-all relative flex items-center gap-1.5 cursor-pointer ${
-                isActive ? 'text-primary' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <span>{labels[tab]}</span>
-              <span className={`inline-block px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
-                isActive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'
-              }`}>
-                {count}
-              </span>
-              {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <StatusTabs
+        className="rounded-lg shadow-sm"
+        items={([
+          { key: 'ALL', label: '全部' },
+          { key: 'DRAFT', label: '草稿' },
+          { key: 'CONFIRMED', label: '已确认' },
+          { key: 'VOIDED', label: '已作废' },
+        ] as const).map(tab => ({ ...tab, count: tabCounts[tab.key] || 0 }))}
+        activeKey={activeTab}
+        onChange={key => {
+          setActiveTab(key as StockInStatus | 'ALL');
+          setCurrentPage(1);
+        }}
+        ariaLabel="采购入库单状态筛选"
+      />
 
       {/* 搜索与过滤面板 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100">
-        <form onSubmit={handleSearch} className="space-y-4">
+      <FilterForm onSubmit={handleSearch} className="!p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 text-xs">
             {/* 1. 入库单号 */}
             <div className="space-y-1">
@@ -392,11 +388,10 @@ export default function StockInList() {
               搜索
             </Button>
           </div>
-        </form>
-      </div>
+      </FilterForm>
 
       {/* 数据列表和工具条 */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
+      <DataTable minWidth="1320px">
         {/* 工具栏 */}
         <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -420,7 +415,7 @@ export default function StockInList() {
         </div>
 
         {/* 列表表格 */}
-        <div className="overflow-x-auto">
+        <div>
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold">
@@ -556,31 +551,18 @@ export default function StockInList() {
           </table>
         </div>
 
-        {/* 分页控制栏 */}
-        <div className="p-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-500 bg-slate-50/50">
-          <span>共 {receipts.length} 条记录，当前第 {currentPage} / {totalPages} 页</span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              className="h-8 text-xs font-bold disabled:opacity-40 border-slate-200 bg-white"
-            >
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              className="h-8 text-xs font-bold disabled:opacity-40 border-slate-200 bg-white"
-            >
-              下一页
-            </Button>
-          </div>
-        </div>
-      </div>
+      </DataTable>
+
+      <Pagination
+        page={currentPage}
+        pageSize={pageSize}
+        total={receipts.length}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={nextPageSize => {
+          setPageSize(nextPageSize);
+          setCurrentPage(1);
+        }}
+      />
 
       {/* 二次确认对话框 */}
       {confirmAction.type && (

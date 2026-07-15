@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { baseDataApi, type PriceLevelSummary } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { BadgePercent, Clock3, PackageSearch, X } from 'lucide-react';
+import PageTitle from '../components/shared/PageTitle';
 
 const formatMoney = (value: number) => `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -23,13 +24,14 @@ export default function PriceList() {
 
   return (
     <div className="space-y-5 pb-10 text-xs">
+      <PageTitle compact title="价格等级表" description="查看客户等级默认折扣及各等级商品销售价格，只读展示。" />
       <div className="grid grid-cols-1 xl:grid-cols-[0.95fr_1.25fr] gap-5 items-start">
         <section className="bg-white rounded-lg border border-slate-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <div>
-              <h1 className="text-base font-black text-slate-800 flex items-center gap-2">
+              <h2 className="text-sm font-black text-slate-800 flex items-center gap-2">
                 <BadgePercent size={17} className="text-primary" /> 价格等级表
-              </h1>
+              </h2>
               <p className="mt-1 text-[11px] text-slate-400 font-medium">客户等级默认折扣与覆盖商品数</p>
             </div>
             <span className="px-2 py-1 rounded bg-primary/10 text-primary font-bold text-[10px]">只读</span>

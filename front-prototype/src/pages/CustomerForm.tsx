@@ -4,7 +4,8 @@ import { BaseCustomer } from '../types/baseData';
 import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { ArrowLeft, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
 
 export default function CustomerForm() {
   const navigate = useNavigate();
@@ -74,24 +75,7 @@ export default function CustomerForm() {
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto pb-12">
-      {/* 页头 */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/base/customers')}
-            className="p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer text-slate-500"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h1 className="text-base font-bold text-slate-800">
-              {code ? '编辑客户档案' : '新增客户档案'}
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">基础资料主数据管理</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader title={code ? '编辑客户档案' : '新增客户档案'} description="基础资料主数据管理" onBack={() => navigate('/base/customers')} />
 
       {/* 主表单 */}
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 space-y-6">

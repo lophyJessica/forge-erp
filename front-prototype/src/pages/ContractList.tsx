@@ -5,6 +5,10 @@ import { contractApi } from '../api/contract';
 import type { Contract, ContractStatus, ContractType } from '../types/contract';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 
 const TABS: Array<ContractStatus | 'ALL'> = ['ALL', 'DRAFT', 'ACTIVE', 'EXPIRED', 'TERMINATED'];
 
@@ -37,6 +41,7 @@ export default function ContractList() {
   const [keyword, setKeyword] = useState('');
   const [type, setType] = useState<ContractType | 'ALL'>('ALL');
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(contracts);
 
   const loadData = () => {
     setContracts(contractApi.getContracts({ status: activeTab, keyword, type }));
@@ -112,36 +117,17 @@ export default function ContractList() {
 
   return (
     <div className="space-y-4 text-xs pb-10">
-      <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-lg font-black text-slate-800">合同管理</h1>
-          <p className="text-slate-500 mt-1">独立文档台账，仅维护合同基本信息和扫描件文件名。</p>
-        </div>
-        <Button size="sm" onClick={() => navigate('/contracts/new')} className="gap-1 font-bold">
-          <FilePlus2 size={14} />
-          新增合同
-        </Button>
-      </div>
+      <PageTitle compact title="合同管理" description="独立文档台账，仅维护合同基本信息和扫描件文件名。" actions={(
+        <Button size="sm" onClick={() => navigate('/contracts/new')} className="gap-1 font-bold"><FilePlus2 size={14} />新增合同</Button>
+      )} />
 
-      <div className="flex border-b border-slate-200 bg-white px-4 pt-3 rounded-t-lg shadow-sm">
-        {TABS.map(tab => {
-          const active = activeTab === tab;
-          const color = active
-            ? tab === 'ACTIVE'
-              ? 'border-emerald-500 text-emerald-600 font-bold'
-              : tab === 'EXPIRED'
-              ? 'border-amber-500 text-amber-600 font-bold'
-              : tab === 'TERMINATED'
-              ? 'border-rose-500 text-rose-600 font-bold'
-              : 'border-slate-800 text-slate-900 font-bold'
-            : 'border-transparent text-slate-500 hover:text-slate-700';
-          return (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 border-b-2 transition-colors ${color}`}>
-              {STATUS_LABEL[tab]} <span className="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">{countOf(tab)}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StatusTabs
+        className="rounded-t-lg shadow-sm"
+        items={TABS.map(tab => ({ key: tab, label: STATUS_LABEL[tab], count: countOf(tab) }))}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as ContractStatus | 'ALL')}
+        ariaLabel="合同状态筛选"
+      />
 
       <div className="bg-white p-5 rounded-b-lg shadow-sm border-x border-b border-slate-100">
         <form
@@ -149,29 +135,31 @@ export default function ContractList() {
             event.preventDefault();
             loadData();
           }}
-          className="grid grid-cols-1 md:grid-cols-5 gap-3"
+          className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,2fr)_minmax(12rem,1fr)] md:items-center lg:grid-cols-[minmax(20rem,2fr)_minmax(12rem,1fr)_auto]"
         >
-          <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="合同号 / 名称 / 对方" className="h-9 text-xs md:col-span-2" />
-          <select value={type} onChange={event => setType(event.target.value as ContractType | 'ALL')} className="h-9 rounded-md border border-slate-200 px-2">
+          <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="合同号 / 名称 / 对方" className="h-9 text-xs" />
+          <select value={type} onChange={event => setType(event.target.value as ContractType | 'ALL')} className="h-9 w-full rounded-md border border-slate-200 px-2">
             <option value="ALL">全部类型</option>
             <option value="PURCHASE">采购合同</option>
             <option value="SALES">销售合同</option>
           </select>
-          <Button type="submit" size="sm" className="gap-1 font-bold"><Search size={14} />搜索</Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setKeyword('');
-              setType('ALL');
-              setContracts(contractApi.getContracts({ status: activeTab, keyword: '', type: 'ALL' }));
-            }}
-            className="gap-1 font-bold"
-          >
-            <RefreshCw size={14} />
-            重置
-          </Button>
+          <div className="contract-filter-actions flex items-center gap-2 md:col-span-2 lg:col-span-1">
+            <Button type="submit" size="sm" className="h-9 gap-1 px-4 font-bold"><Search size={14} />搜索</Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setKeyword('');
+                setType('ALL');
+                setContracts(contractApi.getContracts({ status: activeTab, keyword: '', type: 'ALL' }));
+              }}
+              className="h-9 gap-1 px-4 font-bold"
+            >
+              <RefreshCw size={14} />
+              重置
+            </Button>
+          </div>
         </form>
       </div>
 
@@ -192,7 +180,7 @@ export default function ContractList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {contracts.map(item => (
+              {pageRows.map(item => (
                 <tr key={item.id} onClick={() => navigate(`/contracts/${item.id}`)} className="hover:bg-slate-50/60 cursor-pointer">
                   <td className="p-3 font-mono font-black text-primary">{item.id}</td>
                   <td className="p-3 font-bold text-slate-800">{item.name}</td>
@@ -214,6 +202,7 @@ export default function ContractList() {
           </table>
         </div>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={contracts.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

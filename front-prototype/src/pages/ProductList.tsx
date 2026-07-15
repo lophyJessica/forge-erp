@@ -4,6 +4,11 @@ import { BaseProduct } from '../types/baseData';
 import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 import { Edit3, Plus, Power, RotateCcw, Search, Eye } from 'lucide-react';
 
 export default function ProductList() {
@@ -11,6 +16,7 @@ export default function ProductList() {
 
   const [query, setQuery] = useState('');
   const [products, setProducts] = useState<BaseProduct[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(products);
 
   const loadData = () => {
     const list = baseDataApi.getProducts();
@@ -69,10 +75,21 @@ export default function ProductList() {
 
   return (
     <div className="space-y-4">
-      {/* 搜索 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
-        <form onSubmit={e => { e.preventDefault(); loadData(); }} className="flex flex-1 items-center gap-3">
-          <div className="w-72">
+      <PageTitle
+        compact
+        title="商品档案"
+        description="维护商品编码、条码、规格、库存阈值及默认采购销售价格。"
+        actions={(
+          <Button onClick={() => navigate('/base/products/new')} className="flex items-center gap-1.5">
+            <Plus size={14} /> 新增商品
+          </Button>
+        )}
+      />
+
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="!p-4">
+        <div className="flex flex-wrap items-end gap-3 text-xs">
+          <div className="min-w-[16rem] flex-1 sm:max-w-sm">
+            <label className="mb-1 block font-semibold text-slate-500">商品关键词</label>
             <Input
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -91,19 +108,11 @@ export default function ProductList() {
           >
             <RotateCcw size={14} /> 重置
           </Button>
-        </form>
-
-        <Button
-          onClick={() => navigate('/base/products/new')}
-          className="h-9 px-4 flex items-center gap-1 font-bold bg-primary text-white"
-        >
-          <Plus size={14} /> 新增商品
-        </Button>
-      </div>
+        </div>
+      </FilterForm>
 
       {/* 列表 */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
+      <DataTable minWidth="1280px">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 font-semibold">
@@ -122,7 +131,7 @@ export default function ProductList() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {products.length > 0 ? (
-                products.map(prod => {
+                pageRows.map(prod => {
                   const isInactive = prod.status === 'inactive';
                   return (
                     <tr 
@@ -195,8 +204,8 @@ export default function ProductList() {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={products.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
       {/* 停用原因确认 Modal */}
       {isDisableModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

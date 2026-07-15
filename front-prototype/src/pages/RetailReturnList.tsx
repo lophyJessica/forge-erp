@@ -4,6 +4,9 @@ import { retailApi } from '../api/retail';
 import type { RetailReturn } from '../types/retail';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 function money(value: number) {
   return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -24,6 +27,7 @@ export default function RetailReturnList() {
       || retailApi.getPaymentLabel(item.paymentMethod).includes(keyword.trim())
     );
   }, [returns, keyword]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(filtered);
 
   const totalRefund = filtered.reduce((sum, item) => sum + item.refundAmount, 0);
 
@@ -87,16 +91,12 @@ export default function RetailReturnList() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-lg font-black text-slate-800">零售退货</h1>
-          <p className="text-xs text-slate-500 mt-1">零售退货必须从原零售单 RS 下推，确认后回补库存并按原支付方式退款。</p>
-        </div>
-        <div className="relative w-full lg:w-80">
+      <PageTitle compact title="零售退货" description="零售退货必须从原零售单 RS 下推，确认后回补库存并按原支付方式退款。" actions={(
+        <div className="relative w-full sm:w-80">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="搜索退货单 / RS / 收银员 / 支付方式" className="h-9 pl-9 text-xs" />
         </div>
-      </div>
+      )} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-100 h-28 flex flex-col justify-between">
@@ -139,7 +139,7 @@ export default function RetailReturnList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {filtered.map(item => (
+              {pageRows.map(item => (
                 <tr key={item.id} className="hover:bg-slate-50/60">
                   <td className="p-3 font-mono font-black text-primary">{item.id}</td>
                   <td className="p-3 font-mono font-bold text-slate-700">{item.sourceRetailOrderId}</td>
@@ -163,6 +163,7 @@ export default function RetailReturnList() {
           </table>
         </div>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

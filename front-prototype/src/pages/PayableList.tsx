@@ -4,6 +4,11 @@ import { Eye, PlusCircle } from 'lucide-react';
 import { financeApi } from '../api/finance';
 import { SETTLEMENT_STATUS_LABELS, PayableSummary, SettlementStatus } from '../types/finance';
 import { Button } from '../components/ui/Button';
+import PageTitle from '../components/shared/PageTitle';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 
 const TABS: Array<SettlementStatus | 'ALL'> = ['ALL', 'UNSETTLED', 'PARTIAL', 'SETTLED'];
 
@@ -16,6 +21,7 @@ export default function PayableList() {
   const [activeTab, setActiveTab] = useState<SettlementStatus | 'ALL'>('ALL');
   const [rows, setRows] = useState<PayableSummary[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(rows);
 
   const loadData = () => {
     setRows(financeApi.getPayableSummaries(activeTab));
@@ -32,32 +38,21 @@ export default function PayableList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-lg font-bold text-slate-800">应付管理</h1>
-          <p className="text-xs text-slate-500 mt-1">按供应商汇总展示：应付金额 = ΣPI，已付金额 = ΣPY，余额自动计算。</p>
-        </div>
-        <Button size="sm" onClick={() => navigate('/finance/payments/new')} className="gap-1.5 font-bold">
-          <PlusCircle size={14} />
-          新建付款单
-        </Button>
-      </div>
+      <PageTitle compact title="应付管理" description="按供应商汇总展示：应付金额 = ΣPI，已付金额 = ΣPY，余额自动计算。" actions={(
+        <Button size="sm" onClick={() => navigate('/finance/payments/new')} className="gap-1.5 font-bold"><PlusCircle size={14} />新建付款单</Button>
+      )} />
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 space-y-4">
-        <div className="flex gap-2 flex-wrap border-b border-slate-100 pb-3">
-          {TABS.map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-colors ${
-                activeTab === tab ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {tab === 'ALL' ? '全部' : SETTLEMENT_STATUS_LABELS[tab]}
-              <span className={`ml-1 ${activeTab === tab ? 'text-white/80' : 'text-slate-400'}`}>{counts[tab] || 0}</span>
-            </button>
-          ))}
-        </div>
+      <DataTable minWidth="980px">
+        <StatusTabs
+          items={TABS.map(tab => ({
+            key: tab,
+            label: tab === 'ALL' ? '全部' : SETTLEMENT_STATUS_LABELS[tab],
+            count: counts[tab] || 0,
+          }))}
+          activeKey={activeTab}
+          onChange={key => setActiveTab(key as SettlementStatus | 'ALL')}
+          ariaLabel="应付核销状态筛选"
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -74,7 +69,7 @@ export default function PayableList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {rows.map(row => (
+              {pageRows.map(row => (
                 <tr key={row.supplierCode} className="hover:bg-slate-50/50">
                   <td className="p-3 font-mono font-bold text-primary">{row.supplierCode}</td>
                   <td className="p-3 font-semibold text-slate-800">{row.supplierName}</td>
@@ -102,7 +97,8 @@ export default function PayableList() {
             </tbody>
           </table>
         </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

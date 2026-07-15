@@ -5,6 +5,10 @@ import { rfqApi } from '../api/rfq';
 import type { RfqOrder, RfqStatus } from '../types/rfq';
 import { RFQ_STATUS_LABELS } from '../types/rfq';
 import { Button } from '../components/ui/Button';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 
 const TABS: { key: RfqStatus; label: string }[] = [
   { key: 'DRAFT', label: '草稿' },
@@ -24,6 +28,7 @@ export default function RfqList() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<RfqStatus>('DRAFT');
   const [rows, setRows] = useState<RfqOrder[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(rows);
   const [counts, setCounts] = useState<Record<RfqStatus, number>>({ DRAFT: 0, QUOTING: 0, AWARDED: 0, VOIDED: 0 });
 
   const loadData = () => {
@@ -70,37 +75,17 @@ export default function RfqList() {
 
   return (
     <div className="space-y-4 pb-8">
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">采购询比价管理</h1>
-          <p className="text-xs text-slate-500 mt-1">询价单、供应商报价、比价定标与转采购订单。</p>
-        </div>
-        <Button onClick={() => navigate('/purchase/rfq/new')} className="flex items-center gap-1.5 text-sm font-semibold">
-          <Plus size={16} />
-          新建询价单
-        </Button>
-      </div>
+      <PageTitle compact title="采购询比价管理" description="询价单、供应商报价、比价定标与转采购订单。" actions={(
+        <Button onClick={() => navigate('/purchase/rfq/new')} className="flex items-center gap-1.5 text-sm font-semibold"><Plus size={16} />新建询价单</Button>
+      )} />
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
-        <div className="flex border-b border-slate-100 bg-slate-50/50 p-1">
-          {TABS.map(tab => {
-            const active = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md cursor-pointer ${
-                  active ? 'bg-white text-primary shadow-sm' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span className={`px-1.5 text-xs rounded-full ${active ? 'bg-primary/10 text-primary' : 'bg-slate-200 text-slate-500'}`}>
-                  {counts[tab.key] || 0}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <StatusTabs
+          items={TABS.map(tab => ({ key: tab.key, label: tab.label, count: counts[tab.key] || 0 }))}
+          activeKey={activeTab}
+          onChange={key => setActiveTab(key as RfqStatus)}
+          ariaLabel="询价单状态筛选"
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -116,7 +101,7 @@ export default function RfqList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {rows.map(row => (
+              {pageRows.map(row => (
                 <tr key={row.id} className="hover:bg-slate-50/50 cursor-pointer" onClick={() => navigate(`/purchase/rfq/${row.id}`)}>
                   <td className="p-3 font-semibold text-primary font-mono">{row.id}</td>
                   <td className="p-3 font-medium text-slate-800">{row.title}</td>
@@ -172,6 +157,7 @@ export default function RfqList() {
           </table>
         </div>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

@@ -137,7 +137,7 @@ export default function Dashboard() {
       <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-lg font-black text-slate-800">您好，系统管理员！</h1>
-          <p className="text-xs text-slate-500 mt-1">欢迎使用强盛智能Forge管理系统。今天您有新的待办事项需要处理，请及时查收。</p>
+          <p className="text-xs text-slate-500 mt-1">欢迎使用 Forge ERP 管理系统。今天您有新的待办事项需要处理，请及时查收。</p>
         </div>
         <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-full border border-slate-200/60 font-bold text-slate-600">
           <Calendar size={14} className="text-primary" />
@@ -208,9 +208,9 @@ export default function Dashboard() {
           </div>
           <div className="border-t border-slate-50 pt-2 text-[10px] font-bold">
             {stats.stockWarningCount > 0 ? (
-              <span className="text-rose-500 animate-pulse">⚠️ 有部分商品低于安全预警值！</span>
+              <span className="inline-flex items-center gap-1 text-rose-500 animate-pulse"><AlertTriangle size={12} />有部分商品低于安全预警值！</span>
             ) : (
-              <span className="text-emerald-600">✓ 现存商品可用量充裕</span>
+              <span className="inline-flex items-center gap-1 text-emerald-600"><CheckCircle size={12} />现存商品可用量充裕</span>
             )}
           </div>
         </div>

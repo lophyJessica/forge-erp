@@ -15,7 +15,10 @@ import { integrationApi } from '../api/integration';
 import WmsStatusTag from '../components/WmsStatusTag';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Plus, Download, Upload, Eye, Edit, Trash2, XCircle, Search, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { AlertTriangle, Plus, Download, Upload, Eye, Edit, Trash2, XCircle, Search, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function PurchaseOrderList() {
   const navigate = useNavigate();
@@ -254,7 +257,6 @@ export default function PurchaseOrderList() {
 
   // --- 分页计算 ---
   const paginatedOrders = orders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const totalPages = Math.ceil(orders.length / pageSize) || 1;
 
   // --- 状态徽章渲染配置 ---
   const getStatusBadge = (status: PurchaseOrderStatus) => {
@@ -276,56 +278,40 @@ export default function PurchaseOrderList() {
 
   return (
     <div className="space-y-4 pb-8">
-      {/* 头部标题区 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">采购订单管理</h1>
-          <p className="text-xs text-slate-500 mt-1">采购业务的起点，控制向供应商买什么、买多少、买什么价，并支持流转到入库执行。</p>
-        </div>
-        <Button onClick={() => navigate('/purchase/orders/new')} className="flex items-center gap-1.5 font-semibold text-sm">
-          <Plus size={16} />
-          新建采购订单
-        </Button>
-      </div>
+      <PageTitle
+        eyebrow="采购业务管理"
+        title="采购订单管理"
+        description="采购业务的起点，控制向供应商买什么、买多少、买什么价，并支持流转到入库执行。"
+        actions={(
+          <Button type="button" onClick={() => navigate('/purchase/orders/new')} className="flex items-center gap-1.5 font-semibold text-sm">
+            <Plus size={16} />
+            新建采购订单
+          </Button>
+        )}
+      />
 
       {/* 状态 Tab 栏 */}
       <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
-        <div className="flex border-b border-slate-100 bg-slate-50/50 p-1">
-          {[
+        <StatusTabs
+          items={([
             { key: 'ALL', label: '全部' },
             { key: 'DRAFT', label: '草稿' },
             { key: 'PENDING_AUDIT', label: '待审核' },
             { key: 'PENDING_STOCK_IN', label: '待入库' },
             { key: 'PARTIAL_STOCK_IN', label: '部分入库' },
             { key: 'COMPLETED', label: '已完成' },
-            { key: 'VOIDED', label: '已作废' }
-          ].map(tab => {
+            { key: 'VOIDED', label: '已作废' },
+          ] as const).map(tab => {
             const count = tabCounts[tab.key] ?? 0;
-            const countText = count > 99 ? '99+' : count;
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => handleTabChange(tab.key as any)}
-                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-all rounded-md cursor-pointer ${
-                  isActive 
-                    ? 'bg-white text-primary shadow-sm border-b border-slate-200' 
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span className={`inline-block px-1.5 py-0.2 text-xs rounded-full ${
-                  isActive ? 'bg-primary/10 text-primary' : 'bg-slate-200/80 text-slate-500'
-                }`}>
-                  {countText}
-                </span>
-              </button>
-            );
+            return { ...tab, count: count > 99 ? '99+' : count };
           })}
-        </div>
+          activeKey={activeTab}
+          onChange={key => handleTabChange(key as PurchaseOrderStatus | 'ALL')}
+          ariaLabel="采购订单状态筛选"
+        />
 
         {/* 查询区 */}
-        <form onSubmit={handleSearch} className="p-4 space-y-4">
+        <form onSubmit={handleSearch} role="search" aria-label="采购订单筛选" className="p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">采购单号</label>
@@ -706,68 +692,18 @@ export default function PurchaseOrderList() {
           </table>
         </div>
 
-        {/* 底部分页 */}
-        {orders.length > 0 && (
-          <div className="flex justify-between items-center p-4 border-t border-slate-100 bg-slate-50/20 text-xs text-slate-600">
-            <div className="flex items-center gap-2">
-              <span>每页显示</span>
-              <select
-                value={pageSize}
-                onChange={e => {
-                  setPageSize(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="border border-slate-200 rounded p-1 text-xs"
-              >
-                <option value={10}>10 条</option>
-                <option value={20}>20 条</option>
-                <option value={50}>50 条</option>
-                <option value={100}>100 条</option>
-              </select>
-              <span>当前第 {currentPage} 页 / 共 {totalPages} 页</span>
-            </div>
-            
-            <div className="flex gap-1">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setCurrentPage(1)} 
-                disabled={currentPage === 1}
-                className="h-7 text-xs px-2"
-              >
-                首页
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-                disabled={currentPage === 1}
-                className="h-7 text-xs px-2"
-              >
-                上一页
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-                disabled={currentPage === totalPages}
-                className="h-7 text-xs px-2"
-              >
-                下一页
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setCurrentPage(totalPages)} 
-                disabled={currentPage === totalPages}
-                className="h-7 text-xs px-2"
-              >
-                尾页
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
+
+      <Pagination
+        page={currentPage}
+        pageSize={pageSize}
+        total={orders.length}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={nextPageSize => {
+          setPageSize(nextPageSize);
+          setCurrentPage(1);
+        }}
+      />
 
       {/* 作废二次确认弹窗 */}
       {voidingId !== null && (
@@ -776,7 +712,7 @@ export default function PurchaseOrderList() {
             <div>
               <h3 className="text-base font-bold text-slate-800">确认作废采购订单</h3>
               <p className="text-xs text-slate-500 mt-1">作废单据编号：<span className="font-semibold text-slate-700">{voidingId}</span></p>
-              <p className="text-xs text-rose-500 mt-1 font-semibold">⚠️ 警告：订单作废后将无法恢复，且不可再用于执行入库操作！</p>
+              <p className="mt-1 inline-flex items-start gap-1 text-xs font-semibold text-rose-500"><AlertTriangle size={13} className="mt-0.5 shrink-0" />警告：订单作废后将无法恢复，且不可再用于执行入库操作！</p>
             </div>
             
             <div>

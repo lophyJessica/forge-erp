@@ -5,6 +5,10 @@ import { salesApi } from '../api/sales';
 import type { SalesReturn, SalesReturnStatus } from '../types/sales';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 
 const TABS: Array<SalesReturnStatus | 'ALL'> = ['ALL', 'DRAFT', 'CONFIRMED', 'VOIDED'];
 const STATUS_LABEL: Record<SalesReturnStatus | 'ALL', string> = {
@@ -30,6 +34,7 @@ export default function SalesReturnList() {
   const [sooNumber, setSooNumber] = useState('');
   const [customerCode, setCustomerCode] = useState('');
   const [returns, setReturns] = useState<SalesReturn[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(returns);
   const customers = salesApi.getCustomers();
 
   const loadData = () => {
@@ -90,25 +95,15 @@ export default function SalesReturnList() {
 
   return (
     <div className="space-y-4 text-xs">
-      <div className="flex border-b border-slate-200 bg-white px-4 pt-3 rounded-t-lg shadow-sm">
-        {TABS.map(tab => {
-          const active = activeTab === tab;
-          const color = active
-            ? tab === 'CONFIRMED'
-              ? 'border-emerald-500 text-emerald-600 font-bold'
-              : tab === 'VOIDED'
-              ? 'border-rose-500 text-rose-600 font-bold'
-              : tab === 'DRAFT'
-              ? 'border-slate-500 text-slate-700 font-bold'
-              : 'border-slate-900 text-slate-900 font-bold'
-            : 'border-transparent text-slate-500 hover:text-slate-700';
-          return (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 border-b-2 transition-colors ${color}`}>
-              {STATUS_LABEL[tab]} <span className="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">{countOf(tab)}</span>
-            </button>
-          );
-        })}
-      </div>
+      <PageTitle compact title="销售退货单" description="必须由已确认 SOO 下推创建，确认后回补库存并冲减应收。" />
+
+      <StatusTabs
+        className="rounded-t-lg shadow-sm"
+        items={TABS.map(tab => ({ key: tab, label: STATUS_LABEL[tab], count: countOf(tab) }))}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as SalesReturnStatus | 'ALL')}
+        ariaLabel="销售退货状态筛选"
+      />
 
       <div className="bg-white p-5 rounded-b-lg shadow-sm border-x border-b border-slate-100">
         <form
@@ -148,7 +143,7 @@ export default function SalesReturnList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {returns.map(item => (
+              {pageRows.map(item => (
                 <tr key={item.id} onClick={() => navigate(`/sales/returns/${item.id}`)} className="hover:bg-slate-50/60 cursor-pointer">
                   <td className="p-3 font-mono font-black text-primary">{item.id}</td>
                   <td className="p-3 font-mono font-bold text-indigo-600">{item.sourceOutboundId}</td>
@@ -165,6 +160,7 @@ export default function SalesReturnList() {
           </table>
         </div>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={returns.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { baseDataApi } from '../api/baseData';
 import { BaseCustomer } from '../types/baseData';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, Edit3, Power, User } from 'lucide-react';
+import { Edit3, Power } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
 
 export default function CustomerDetail() {
   const navigate = useNavigate();
@@ -72,35 +73,12 @@ export default function CustomerDetail() {
 
   return (
     <div className="space-y-4 max-w-3xl mx-auto text-xs pb-12">
-      {/* 页头 */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/base/customers')}
-            className="p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer text-slate-500"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-              <User size={18} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-slate-800">{data.name}</h1>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                  isInactive 
-                    ? 'bg-slate-100 text-slate-400 border-slate-200' 
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                }`}>
-                  {isInactive ? '已停用' : '已启用'}
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-0.5">编码：{data.code}</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title={<>{data.name}<span className={`rounded border px-2 py-0.5 text-[10px] font-bold ${isInactive ? 'border-slate-200 bg-slate-100 text-slate-400' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>{isInactive ? '已停用' : '已启用'}</span></>}
+        description={`客户编码：${data.code}`}
+        onBack={() => navigate('/base/customers')}
+        actions={(
+          <>
           <Button
             variant="outline"
             size="sm"
@@ -120,8 +98,9 @@ export default function CustomerDetail() {
             <Power size={13} />
             <span>{isInactive ? '启用客户' : '停用客户'}</span>
           </Button>
-        </div>
-      </div>
+          </>
+        )}
+      />
 
       {/* 详情卡片 */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 space-y-6">

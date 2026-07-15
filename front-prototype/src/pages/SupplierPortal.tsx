@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Building2, CheckCircle, Send } from 'lucide-react';
+import { Building2, CheckCircle, Send } from 'lucide-react';
 import { rfqApi } from '../api/rfq';
 import { MOCK_SUPPLIERS } from '../api/purchaseOrder';
 import type { RfqOrder, RfqQuoteLine } from '../types/rfq';
 import type { TaxRate } from '../types/purchaseOrder';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import PageHeader from '../components/shared/PageHeader';
+import DataTable from '../components/shared/DataTable';
 
 export default function SupplierPortal() {
   const [supplierCode, setSupplierCode] = useState(MOCK_SUPPLIERS[0]?.code || '');
@@ -83,11 +86,8 @@ export default function SupplierPortal() {
       <main className="p-6 max-w-6xl mx-auto space-y-4">
         {!current ? (
           <>
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-              <h2 className="text-lg font-bold text-slate-800">待报价列表</h2>
-              <p className="text-xs text-slate-500 mt-1">当前模拟登录供应商：{supplier.name}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
+            <PageTitle compact title="待报价列表" description={`当前模拟登录供应商：${supplier.name}`} />
+            <DataTable minWidth="860px">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 text-xs font-semibold">
@@ -129,21 +129,13 @@ export default function SupplierPortal() {
                   )}
                 </tbody>
               </table>
-            </div>
+            </DataTable>
           </>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-              <button onClick={() => setCurrent(null)} className="p-1 hover:bg-slate-100 rounded cursor-pointer">
-                <ArrowLeft size={18} />
-              </button>
-              <div>
-                <h2 className="text-lg font-bold text-slate-800">提交报价 {current.id}</h2>
-                <p className="text-xs text-slate-500 mt-1">{current.title} | 截止日期 {current.deadline}</p>
-              </div>
-            </div>
+            <PageHeader title={`提交报价 ${current.id}`} description={`${current.title} | 截止日期 ${current.deadline}`} onBack={() => setCurrent(null)} />
 
-            <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
+            <DataTable minWidth="980px">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 text-xs font-semibold">
@@ -183,7 +175,7 @@ export default function SupplierPortal() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </DataTable>
 
             <div className="flex justify-end bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
               <Button onClick={submitQuote} size="sm" className="flex items-center gap-1.5 font-bold">

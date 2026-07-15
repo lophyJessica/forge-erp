@@ -5,6 +5,10 @@ import { stockInApi } from '../api/stockIn';
 import { MOCK_PRODUCTS, MOCK_WAREHOUSES } from '../api/purchaseOrder';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
 import { Search, RotateCcw, Download, Eye, AlertCircle } from 'lucide-react';
 
 export default function InventoryFlowList() {
@@ -126,22 +130,18 @@ export default function InventoryFlowList() {
   };
 
   // 分页计算
-  const totalPages = Math.ceil(flows.length / pageSize) || 1;
   const paginatedFlows = flows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-4">
-      {/* 顶部标题区 */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex justify-between items-center">
-        <div>
-          <h1 className="text-lg font-bold text-slate-800">库存收发流水台账</h1>
-          <p className="text-xs text-slate-500 mt-1">系统全量收发审计日志，只读历史对账台账</p>
-        </div>
-      </div>
+      <PageTitle
+        compact
+        title="库存收发流水台账"
+        description="系统全量收发审计日志，只读历史对账台账"
+      />
 
       {/* 复合搜索筛选区 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100">
-        <form onSubmit={handleSearch} className="space-y-4">
+      <FilterForm onSubmit={handleSearch} className="!p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
             {/* 1. 仓库 */}
             <div className="space-y-1">
@@ -275,11 +275,10 @@ export default function InventoryFlowList() {
               搜索
             </Button>
           </div>
-        </form>
-      </div>
+      </FilterForm>
 
       {/* 数据列表 */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
+      <DataTable minWidth="1400px">
         {/* 工具栏 */}
         <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
           <span className="text-xs text-slate-500 font-bold">
@@ -298,7 +297,7 @@ export default function InventoryFlowList() {
         </div>
 
         {/* 流水表格 */}
-        <div className="overflow-x-auto">
+        <div>
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold">
@@ -377,31 +376,18 @@ export default function InventoryFlowList() {
           </table>
         </div>
 
-        {/* 分页 */}
-        <div className="p-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-500 bg-slate-50/50">
-          <span>共 {flows.length} 条流水，当前第 {currentPage} / {totalPages} 页</span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              className="h-8 text-xs font-bold disabled:opacity-40 border-slate-200 bg-white"
-            >
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              className="h-8 text-xs font-bold disabled:opacity-40 border-slate-200 bg-white"
-            >
-              下一页
-            </Button>
-          </div>
-        </div>
-      </div>
+      </DataTable>
+
+      <Pagination
+        page={currentPage}
+        pageSize={pageSize}
+        total={flows.length}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={nextPageSize => {
+          setPageSize(nextPageSize);
+          setCurrentPage(1);
+        }}
+      />
     </div>
   );
 }

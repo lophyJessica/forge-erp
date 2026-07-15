@@ -16,7 +16,7 @@ import WmsStatusTag from '../components/WmsStatusTag';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { 
-  ArrowLeft, CheckCircle, XCircle, FileText, Trash2, Edit3, 
+  AlertTriangle, ArrowLeft, CheckCircle, XCircle, FileText, Trash2, Edit3,
   Send, ShieldCheck, Ban, ArrowUpRight, Clipboard, Clock
 } from 'lucide-react';
 
@@ -613,7 +613,7 @@ export default function PurchaseOrderDetail() {
           <div className="bg-white rounded-lg shadow-lg border border-slate-100 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div>
               <h3 className="text-base font-bold text-slate-800">作废采购订单</h3>
-              <p className="text-xs text-rose-500 mt-1 font-semibold">⚠️ 警告：作废是不可逆操作，单据将永久变为已作废状态且无法入库。</p>
+              <p className="mt-1 inline-flex items-start gap-1 text-xs font-semibold text-rose-500"><AlertTriangle size={13} className="mt-0.5 shrink-0" />警告：作废是不可逆操作，单据将永久变为已作废状态且无法入库。</p>
             </div>
             
             <div>

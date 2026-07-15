@@ -4,6 +4,11 @@ import { BaseSupplier } from '../types/baseData';
 import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 import { Search, RotateCcw, Plus, Edit3, Power, Eye } from 'lucide-react';
 
 export default function SupplierList() {
@@ -11,6 +16,7 @@ export default function SupplierList() {
 
   const [query, setQuery] = useState('');
   const [suppliers, setSuppliers] = useState<BaseSupplier[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(suppliers);
 
   const loadData = () => {
     const list = baseDataApi.getSuppliers();
@@ -69,10 +75,21 @@ export default function SupplierList() {
 
   return (
     <div className="space-y-4">
-      {/* 搜索卡片 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
-        <form onSubmit={e => { e.preventDefault(); loadData(); }} className="flex flex-1 items-center gap-3">
-          <div className="w-72">
+      <PageTitle
+        compact
+        title="供应商档案"
+        description="维护采购供应商、联系人、结算方式与付款账期。"
+        actions={(
+          <Button onClick={() => navigate('/base/suppliers/new')} className="flex items-center gap-1.5">
+            <Plus size={14} /> 新增供应商
+          </Button>
+        )}
+      />
+
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="!p-4">
+        <div className="flex flex-wrap items-end gap-3 text-xs">
+          <div className="min-w-[16rem] flex-1 sm:max-w-sm">
+            <label className="mb-1 block font-semibold text-slate-500">供应商关键词</label>
             <Input
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -91,19 +108,11 @@ export default function SupplierList() {
           >
             <RotateCcw size={14} /> 重置
           </Button>
-        </form>
-
-        <Button
-          onClick={() => navigate('/base/suppliers/new')}
-          className="h-9 px-4 flex items-center gap-1 font-bold bg-primary text-white"
-        >
-          <Plus size={14} /> 新增供应商
-        </Button>
-      </div>
+        </div>
+      </FilterForm>
 
       {/* 数据列表 */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
+      <DataTable minWidth="1040px">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 font-semibold">
@@ -120,7 +129,7 @@ export default function SupplierList() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {suppliers.length > 0 ? (
-                suppliers.map(sup => {
+                pageRows.map(sup => {
                   const isInactive = sup.status === 'inactive';
                   return (
                     <tr 
@@ -193,8 +202,8 @@ export default function SupplierList() {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={suppliers.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
       {/* 停用原因确认 Modal */}
       {isDisableModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

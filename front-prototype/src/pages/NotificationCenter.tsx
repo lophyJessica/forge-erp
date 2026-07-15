@@ -3,6 +3,10 @@ import { Bell, CalendarClock, CheckCircle2, CheckSquare, Info, MailOpen, Megapho
 import { Button } from '../components/ui/Button';
 import { notificationApi } from '../api/notification';
 import type { NotificationCategory, NotificationMessage, NotificationTab } from '../types/notification';
+import PageTitle from '../components/shared/PageTitle';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 
 const TABS: NotificationTab[] = ['ALL', 'UNREAD', 'READ'];
 
@@ -42,6 +46,7 @@ function categoryClass(category: NotificationCategory) {
 export default function NotificationCenter() {
   const [activeTab, setActiveTab] = useState<NotificationTab>('ALL');
   const [messages, setMessages] = useState<NotificationMessage[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(messages);
 
   const loadData = () => {
     setMessages(notificationApi.getNotifications(activeTab));
@@ -73,35 +78,17 @@ export default function NotificationCenter() {
 
   return (
     <div className="space-y-4 pb-10 text-xs">
-      <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
-        <div>
-          <h1 className="text-lg font-black text-slate-800">消息中心</h1>
-          <p className="mt-1 text-slate-500">系统公告与待办提醒统一查看，可按全部、未读、已读筛选。</p>
-        </div>
-        <Button size="sm" onClick={markAllAsRead} disabled={unreadCount === 0} className="gap-1 font-bold">
-          <CheckCircle2 size={14} />
-          全部已读
-        </Button>
-      </div>
+      <PageTitle compact title="消息中心" description="系统公告与待办提醒统一查看，可按全部、未读、已读筛选。" actions={(
+        <Button size="sm" onClick={markAllAsRead} disabled={unreadCount === 0} className="gap-1 font-bold"><CheckCircle2 size={14} />全部已读</Button>
+      )} />
 
-      <div className="flex rounded-t-lg border-b border-slate-200 bg-white px-4 pt-3 shadow-sm">
-        {TABS.map(tab => {
-          const active = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`border-b-2 px-4 py-2 transition-colors ${
-                active ? 'border-primary font-black text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {TAB_LABEL[tab]}
-              <span className="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">{countOf(tab)}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StatusTabs
+        className="rounded-t-lg shadow-sm"
+        items={TABS.map(tab => ({ key: tab, label: TAB_LABEL[tab], count: countOf(tab) }))}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as NotificationTab)}
+        ariaLabel="消息状态筛选"
+      />
 
       <div className="overflow-hidden rounded-b-lg border-x border-b border-slate-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
@@ -117,7 +104,7 @@ export default function NotificationCenter() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {messages.map(item => (
+              {pageRows.map(item => (
                 <tr key={item.id} className={`hover:bg-slate-50/70 ${item.status === 'UNREAD' ? 'bg-primary/[0.02]' : ''}`}>
                   <td className="p-3">
                     <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-1 font-bold ${categoryClass(item.category)}`}>
@@ -181,6 +168,7 @@ export default function NotificationCenter() {
           </table>
         </div>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={messages.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }
