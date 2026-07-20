@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BaseCustomer } from '../types/baseData';
-import { baseDataApi } from '../api/baseData';
+import { db } from '../db/index';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import PageTitle from '../components/shared/PageTitle';
@@ -16,32 +17,25 @@ export default function CustomerList() {
   const navigate = useNavigate();
 
   const [query, setQuery] = useState('');
-  const [customers, setCustomers] = useState<BaseCustomer[]>([]);
+  const customersRaw = useLiveQuery(() => db.customers.toArray(), []) || [];
+
+  const customers = useMemo(() => {
+    if (!query.trim()) return customersRaw;
+    const q = query.toLowerCase().trim();
+    return customersRaw.filter(x => 
+      x.code.toLowerCase().includes(q) || 
+      x.name.toLowerCase().includes(q) ||
+      (x.contact && x.contact.toLowerCase().includes(q))
+    );
+  }, [customersRaw, query]);
+
   const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(customers);
-
-  const loadData = () => {
-    const list = baseDataApi.getCustomers();
-    if (query.trim()) {
-      const q = query.toLowerCase().trim();
-      setCustomers(list.filter(x => 
-        x.code.toLowerCase().includes(q) || 
-        x.name.toLowerCase().includes(q) ||
-        (x.contact && x.contact.toLowerCase().includes(q))
-      ));
-    } else {
-      setCustomers(list);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [query]);
 
   const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState('');
   const [disableReason, setDisableReason] = useState('');
 
-  const handleToggleStatus = (code: string, currentStatus: string) => {
+  const handleToggleStatus = async (code: string, currentStatus: string) => {
     if (currentStatus === 'active') {
       setSelectedCode(code);
       setDisableReason('');
@@ -49,9 +43,8 @@ export default function CustomerList() {
     } else {
       if (window.confirm('是否确定启用该客户？')) {
         try {
-          baseDataApi.toggleCustomerStatus(code, 'active');
+          await db.customers.update(code, { status: 'active', disableReason: undefined } as any);
           alert('客户已成功启用');
-          loadData();
         } catch (e: any) {
           alert(e.message || '启用失败');
         }
@@ -59,16 +52,15 @@ export default function CustomerList() {
     }
   };
 
-  const handleConfirmDisable = () => {
+  const handleConfirmDisable = async () => {
     if (!disableReason.trim()) {
       alert('请填写停用原因');
       return;
     }
     try {
-      baseDataApi.toggleCustomerStatus(selectedCode, 'inactive', disableReason);
+      await db.customers.update(selectedCode, { status: 'inactive', disableReason } as any);
       alert('客户已成功停用');
       setIsDisableModalOpen(false);
-      loadData();
     } catch (e: any) {
       alert(e.message || '停用失败');
     }
@@ -87,7 +79,7 @@ export default function CustomerList() {
         )}
       />
 
-      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="!p-4">
+      <FilterForm onSubmit={e => e.preventDefault()} className="!p-4">
         <div className="flex flex-wrap items-end gap-3 text-xs">
           <div className="min-w-[16rem] flex-1 sm:max-w-sm">
             <label className="mb-1 block font-semibold text-slate-500">客户关键词</label>

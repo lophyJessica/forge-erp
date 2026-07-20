@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BaseSupplier } from '../types/baseData';
-import { baseDataApi } from '../api/baseData';
+import { db } from '../db/index';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import PageTitle from '../components/shared/PageTitle';
@@ -15,32 +16,25 @@ export default function SupplierList() {
   const navigate = useNavigate();
 
   const [query, setQuery] = useState('');
-  const [suppliers, setSuppliers] = useState<BaseSupplier[]>([]);
+  const suppliersRaw = useLiveQuery(() => db.suppliers.toArray(), []) || [];
+
+  const suppliers = useMemo(() => {
+    if (!query.trim()) return suppliersRaw;
+    const q = query.toLowerCase().trim();
+    return suppliersRaw.filter(x => 
+      x.code.toLowerCase().includes(q) || 
+      x.name.toLowerCase().includes(q) ||
+      (x.contact && x.contact.toLowerCase().includes(q))
+    );
+  }, [suppliersRaw, query]);
+
   const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(suppliers);
-
-  const loadData = () => {
-    const list = baseDataApi.getSuppliers();
-    if (query.trim()) {
-      const q = query.toLowerCase().trim();
-      setSuppliers(list.filter(x => 
-        x.code.toLowerCase().includes(q) || 
-        x.name.toLowerCase().includes(q) ||
-        (x.contact && x.contact.toLowerCase().includes(q))
-      ));
-    } else {
-      setSuppliers(list);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [query]);
 
   const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState('');
   const [disableReason, setDisableReason] = useState('');
 
-  const handleToggleStatus = (code: string, currentStatus: string) => {
+  const handleToggleStatus = async (code: string, currentStatus: string) => {
     if (currentStatus === 'active') {
       setSelectedCode(code);
       setDisableReason('');
@@ -48,9 +42,8 @@ export default function SupplierList() {
     } else {
       if (window.confirm('是否确定启用该供应商？')) {
         try {
-          baseDataApi.toggleSupplierStatus(code, 'active');
+          await db.suppliers.update(code, { status: 'active', disableReason: undefined } as any);
           alert('供应商已成功启用');
-          loadData();
         } catch (e: any) {
           alert(e.message || '启用失败');
         }
@@ -58,16 +51,15 @@ export default function SupplierList() {
     }
   };
 
-  const handleConfirmDisable = () => {
+  const handleConfirmDisable = async () => {
     if (!disableReason.trim()) {
       alert('请填写停用原因');
       return;
     }
     try {
-      baseDataApi.toggleSupplierStatus(selectedCode, 'inactive', disableReason);
+      await db.suppliers.update(selectedCode, { status: 'inactive', disableReason } as any);
       alert('供应商已成功停用');
       setIsDisableModalOpen(false);
-      loadData();
     } catch (e: any) {
       alert(e.message || '停用失败');
     }
@@ -86,7 +78,7 @@ export default function SupplierList() {
         )}
       />
 
-      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="!p-4">
+      <FilterForm onSubmit={e => e.preventDefault()} className="!p-4">
         <div className="flex flex-wrap items-end gap-3 text-xs">
           <div className="min-w-[16rem] flex-1 sm:max-w-sm">
             <label className="mb-1 block font-semibold text-slate-500">供应商关键词</label>

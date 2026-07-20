@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BaseProduct } from '../types/baseData';
-import { baseDataApi } from '../api/baseData';
+import { db } from '../db/index';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import PageTitle from '../components/shared/PageTitle';
@@ -15,32 +16,25 @@ export default function ProductList() {
   const navigate = useNavigate();
 
   const [query, setQuery] = useState('');
-  const [products, setProducts] = useState<BaseProduct[]>([]);
+  const productsRaw = useLiveQuery(() => db.products.toArray(), []) || [];
+
+  const products = useMemo(() => {
+    if (!query.trim()) return productsRaw;
+    const q = query.toLowerCase().trim();
+    return productsRaw.filter(x => 
+      x.code.toLowerCase().includes(q) || 
+      x.name.toLowerCase().includes(q) ||
+      (x.barcode && x.barcode.toLowerCase().includes(q))
+    );
+  }, [productsRaw, query]);
+
   const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(products);
-
-  const loadData = () => {
-    const list = baseDataApi.getProducts();
-    if (query.trim()) {
-      const q = query.toLowerCase().trim();
-      setProducts(list.filter(x => 
-        x.code.toLowerCase().includes(q) || 
-        x.name.toLowerCase().includes(q) ||
-        (x.barcode && x.barcode.toLowerCase().includes(q))
-      ));
-    } else {
-      setProducts(list);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [query]);
 
   const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState('');
   const [disableReason, setDisableReason] = useState('');
 
-  const handleToggleStatus = (code: string, currentStatus: string) => {
+  const handleToggleStatus = async (code: string, currentStatus: string) => {
     if (currentStatus === 'active') {
       setSelectedCode(code);
       setDisableReason('');
@@ -48,9 +42,8 @@ export default function ProductList() {
     } else {
       if (window.confirm('是否确定启用该商品？')) {
         try {
-          baseDataApi.toggleProductStatus(code, 'active');
+          await db.products.update(code, { status: 'active', disableReason: undefined } as any);
           alert('商品已成功启用');
-          loadData();
         } catch (e: any) {
           alert(e.message || '启用失败');
         }
@@ -58,16 +51,15 @@ export default function ProductList() {
     }
   };
 
-  const handleConfirmDisable = () => {
+  const handleConfirmDisable = async () => {
     if (!disableReason.trim()) {
       alert('请填写停用原因');
       return;
     }
     try {
-      baseDataApi.toggleProductStatus(selectedCode, 'inactive', disableReason);
+      await db.products.update(selectedCode, { status: 'inactive', disableReason } as any);
       alert('商品已成功停用');
       setIsDisableModalOpen(false);
-      loadData();
     } catch (e: any) {
       alert(e.message || '停用失败');
     }
@@ -86,7 +78,7 @@ export default function ProductList() {
         )}
       />
 
-      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="!p-4">
+      <FilterForm onSubmit={e => e.preventDefault()} className="!p-4">
         <div className="flex flex-wrap items-end gap-3 text-xs">
           <div className="min-w-[16rem] flex-1 sm:max-w-sm">
             <label className="mb-1 block font-semibold text-slate-500">商品关键词</label>
